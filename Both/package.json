@@ -1,0 +1,8 @@
+{
+
+  "name": "com.mycompany.corelibrary",
+  "version": "1.0.0",
+  "displayName": "Core Library",
+  "description": "Shared scripts across projects",
+  "unity": "2021.3"
+}
