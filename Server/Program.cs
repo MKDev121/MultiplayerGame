@@ -22,9 +22,9 @@ internal class Program
         bool confirmationProcessStarted=false;
         var cts = new CancellationTokenSource();
         Dictionary<IPEndPoint,int> clients = new Dictionary<IPEndPoint, int>();
-        Dictionary<IPEndPoint, PlayerData> players = new Dictionary<IPEndPoint, PlayerData>();
+        Dictionary<int, PlayerData> players = new Dictionary<int, PlayerData>();
 
-        Dictionary<IPEndPoint, List<PositionPacket>> playerDataBuffers = new Dictionary<IPEndPoint, List<PositionPacket>>();
+        Dictionary<int, List<PositionPacket>> playerDataBuffers = new Dictionary<int, List<PositionPacket>>();
         UDP_Server server = new();
         //PeriodicTimer timer = new PeriodicTimer(TimeSpan.FromMilliseconds(16.67f));
         while (true)
@@ -117,6 +117,12 @@ internal class Program
                     }
                     if(Volatile.Read(ref confirmedClients)==clientsConnected){
                         cts.Cancel();
+                        for(int i=0;i<confirmedClients;i++)
+                        {
+
+                            playerDataBuffers.Add(i,new List<PositionPacket>(5));//data which server receives
+                            players.Add(i,new PlayerData());//data which server sends
+                        }
                         break;
                     }
                     
@@ -151,46 +157,56 @@ internal class Program
         async Task Game()
         {
 
-            // Task listeningTask = Task.Run(async () =>
-            // {
-            //     while (true)
-            //     {
-            //         ReceivedPlayerData received = await server.ReceivePlayerData();
-            //         if (clients.ContainsKey(received.sender))
-            //         {
-            //             clients[received.sender].Add(received.data);
-            //         }
-            //     }
-            // }
-            // );
+            Task listeningTask = Task.Run(async () =>
+            {
+                while (true)
+                {
+                    ReceivedPlayerData received = await server.ReceivePlayerData();
+                    
+                    if (clients.ContainsKey(received.sender))
+                    {
+                        playerDataBuffers[clients[received.sender]].Add(received.data);
+                    }
+                }
+            }
+            );
 
-            // Task computingTask = Task.Run(async () =>
-            // {
-            //     //do computation of buffer values of clients at 60 tick rate
-            //     var timer = new PeriodicTimer(TimeSpan.FromSeconds(1 / 60f));
-            //     while (await timer.WaitForNextTickAsync())
-            //     {
-            //         //logic 
-            //         foreach (IPEndPoint ipEndPoint in players.Keys)
-            //         {
 
-            //             PlayerData player = new PlayerData();
-            //             foreach (PositionPacket data in clients[ipEndPoint])
-            //             {
-            //                 player.x += data.deltaX;
-            //                 player.y += data.deltaY;
+                //do computation of buffer values of clients at 60 tick rate
+            var timer = new PeriodicTimer(TimeSpan.FromSeconds(1/60f));
+            while (await timer.WaitForNextTickAsync())
+            {
+                //Console.WriteLine("Tick");
+                //logic 
+                foreach (IPEndPoint client in clients.Keys)
+                {
+                    if(playerDataBuffers[clients[client]].Count>0){
+                    PlayerData player = new PlayerData();
+                    player=players[clients[client]];
+                    foreach (PositionPacket data in playerDataBuffers[clients[client]])
+                    {
+                        player.x += data.deltaX;
+                        player.y += data.deltaY;
+                        
+                        player.id=data.id;
+                    }
+                    Console.WriteLine($"pl_{player.id}, x: {player.x} y: {player.y}");
+                    //Console.WriteLine($"Calculated values of Player_{clients[client]}");
+                    playerDataBuffers[clients[client]].Clear();
+                    players[clients[client]] = player;
+                    }
+                }
+                
+                server.SendPlayerData(clients,players.Values.ToArray());
 
-            //             }
-            //             clients[ipEndPoint].Clear();
-            //             players[ipEndPoint] = player;
-            //         }
-            //         server.SendPlayerData(players);
+                
 
-            //     }
-            // }
-            // );
+            }
+            Console.WriteLine("Tick Done");
+            
 
-            // await Task.WhenAll(listeningTask, computingTask);
+
+        
 
         }
     }
@@ -240,10 +256,10 @@ public class UDP_Server
         udpListener.SendAsync(bytes,bytes.Length,client);
 
     }
-    public void SendPlayerData(Dictionary<IPEndPoint,PlayerData> players)
+    public void SendPlayerData(Dictionary<IPEndPoint,int> clients,PlayerData[]players)
     {
-        byte[] bytes = DataPacketConvertor.getBytes<PlayerData>(players.Values.ToArray());
-        foreach (IPEndPoint remoteIP in players.Keys)
+        byte[] bytes = DataPacketConvertor.getBytes<PlayerData>(players);
+        foreach (IPEndPoint remoteIP in clients.Keys)
         {
             udpListener.SendAsync(bytes,bytes.Length,remoteIP);
         }

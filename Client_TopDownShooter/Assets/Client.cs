@@ -5,6 +5,8 @@ using UnityEngine.UI;
 using System.Text;
 using System.Threading.Tasks;
 using MyExternalLibrary;
+using System;
+using NUnit.Framework;
 
 
 
@@ -27,6 +29,8 @@ public class Client : MonoBehaviour
     public PlayerData[] players;
      IPEndPoint remoteIP;
     int clientID;
+    bool connectedToServer =false;
+    public GameObject[] playerObjects;
     void Start()
     {
         
@@ -39,7 +43,38 @@ public class Client : MonoBehaviour
     }   
     void Update()
     {
+        if(connectedToServer){
         
+        float horizontal = Input.GetAxis("Horizontal");
+        float vertical = Input.GetAxis("Vertical");
+        if (Mathf.Abs(horizontal) > 0.01f || Mathf.Abs(vertical) > 0.01f)
+        {
+            PositionPacket positionPacket = new PositionPacket();
+            positionPacket.deltaX=horizontal;
+            positionPacket.deltaY=vertical;
+            positionPacket.id=clientID;
+            byte[] data = DataPacketConvertor.getBytes(positionPacket);
+            client.Send(data,data.Length,remoteIP);
+        }
+        }
+
+    }
+    void FixedUpdate()
+    {
+        try{
+        if(playerObjects.Length>0&&players!=null){
+            for(int i=0;i<2;i++)
+            {
+                playerObjects[players[i].id].transform.position=new Vector3(players[i].x,playerObjects[i].transform.position.y,players[i].y); 
+                
+            }
+        players=null;
+        }
+        }catch(Exception e)
+        {
+            Debug.Log(e);
+            Debug.Log(e.Source);  
+        }
     }
     public void SendCNFMessage(string message)
     {
@@ -47,6 +82,7 @@ public class Client : MonoBehaviour
             byte[] data = Encoding.UTF8.GetBytes(message);
             client.Send(data,data.Length,remoteIP);
     }
+
     async Task ConnectToServer()
     {
        
@@ -69,12 +105,15 @@ public class Client : MonoBehaviour
             {
                 connectionState=ConnectionState.Connected;
                 messageBox.SetActive(true);
+                playerObjects= new GameObject[2];
                 //Instantiate Players
                 for(int i=0;i<2;i++)
                 {
-                    Instantiate(playerObject,spawnLocations[i].position,Quaternion.identity);
+                   GameObject obj= Instantiate(playerObject,spawnLocations[i].position,Quaternion.identity);
+                   playerObjects[i]=obj;
                 }
                 SendCNFMessage("ACK");
+                connectedToServer=true;
                 Task confirmationTask= Task.Run(async () =>
                 {
                     while(true)
@@ -85,6 +124,8 @@ public class Client : MonoBehaviour
                         {
                             SendCNFMessage("ACK");
                         }else if(!message.Contains("ACK"))
+                            Debug.Log("Server has also started the game");
+                            
                             break;//asumming that server has sent player data
                     }
                 }
@@ -94,7 +135,8 @@ public class Client : MonoBehaviour
             }
 
         }
-        //ListenToServer();
+        ListenToServer();
+
     }
     async Task ListenToServer()
     {
@@ -102,10 +144,17 @@ public class Client : MonoBehaviour
             var message = await client.ReceiveAsync();
             if(players==null)
             {
-                
+                players = new PlayerData[2];
+            }
+            for(int i=0;i<players.Length;i++)
+            {
+                PlayerData pl=DataPacketConvertor.fromBytes<PlayerData>(message.Buffer,i);
+                if(clientID==pl.id)
+                    Debug.Log($"pl_{pl.id} x:{pl.x} y:{pl.y}");
+                players[pl.id]=pl;
             }            
 
-            Debug.Log(message);
+          
     
         }
     }
