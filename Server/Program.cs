@@ -10,6 +10,8 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Linq;
 using MyExternalLibrary;
+using System.Collections.Concurrent;
+using System.ComponentModel.DataAnnotations;
 
 internal class Program
 {
@@ -21,11 +23,14 @@ internal class Program
         int confirmedClients = 0;
         bool confirmationProcessStarted=false;
         var cts = new CancellationTokenSource();
+        float serverDelta = 1/60f;
+        int serverTick = 0;
         Dictionary<IPEndPoint,int> clients = new Dictionary<IPEndPoint, int>();
         Dictionary<int, PlayerData> players = new Dictionary<int, PlayerData>();
 
-        Dictionary<int, List<PositionPacket>> playerDataBuffers = new Dictionary<int, List<PositionPacket>>();
+        Dictionary<int, ConcurrentQueue<object>> playerDataBuffers = new Dictionary<int, ConcurrentQueue<object>>();
         UDP_Server server = new();
+        Console.WriteLine($"IpAddress: {server.getIP()}");
         //PeriodicTimer timer = new PeriodicTimer(TimeSpan.FromMilliseconds(16.67f));
         while (true)
         {
@@ -120,7 +125,7 @@ internal class Program
                         for(int i=0;i<confirmedClients;i++)
                         {
 
-                            playerDataBuffers.Add(i,new List<PositionPacket>(5));//data which server receives
+                            playerDataBuffers.Add(i,new ConcurrentQueue<object>());//data which server receives
                             players.Add(i,new PlayerData());//data which server sends
                         }
                         break;
@@ -165,7 +170,7 @@ internal class Program
                     
                     if (clients.ContainsKey(received.sender))
                     {
-                        playerDataBuffers[clients[received.sender]].Add(received.data);
+                        playerDataBuffers[clients[received.sender]].Enqueue(received.data);
                     }
                 }
             }
@@ -173,33 +178,46 @@ internal class Program
 
 
                 //do computation of buffer values of clients at 60 tick rate
-            var timer = new PeriodicTimer(TimeSpan.FromSeconds(1/60f));
+            var timer = new PeriodicTimer(TimeSpan.FromSeconds(serverDelta));
             while (await timer.WaitForNextTickAsync())
             {
+            
                 //Console.WriteLine("Tick");
                 //logic 
                 foreach (IPEndPoint client in clients.Keys)
                 {
-                    if(playerDataBuffers[clients[client]].Count>0){
-                    PlayerData player = new PlayerData();
-                    player=players[clients[client]];
-                    foreach (PositionPacket data in playerDataBuffers[clients[client]])
+                    if(!playerDataBuffers[clients[client]].IsEmpty)
                     {
-                        player.x += data.deltaX;
-                        player.y += data.deltaY;
+
+                        PlayerData player = players[clients[client]];
+
+                        while (playerDataBuffers[clients[client]].TryDequeue(out object data))
+                        {
+                            if(data is MovementClientPacket mov){
+                                if(player.lastProcessedInput<mov.sequence){
+                                    player.x += mov.deltaX*mov.inputDuration*10f;
+                                    player.y += mov.deltaY*mov.inputDuration*10f;
+                                    player.lastProcessedInput=Math.Max(player.lastProcessedInput, mov.sequence);
+                                }
+                            }else if(data is ShootingClientPacket shoot)
+                            {
+                                //simple linear raycasting algorithm
+                                Console.WriteLine($"player_{clients[client]} is shooting in dir:({shoot.x},{shoot.y},{shoot.z}) and moving:{shoot.moving}");
+
+                            }
+                            player.id=clients[client];
+                           
+                        }
                         
-                        player.id=data.id;
-                    }
-                    Console.WriteLine($"pl_{player.id}, x: {player.x} y: {player.y}");
-                    //Console.WriteLine($"Calculated values of Player_{clients[client]}");
-                    playerDataBuffers[clients[client]].Clear();
-                    players[clients[client]] = player;
+                        Console.WriteLine($"pl_{player.id}, x: {player.x} y: {player.y}");
+                        //Console.WriteLine($"Calculated values of Player_{clients[client]}");
+                      
+                        players[clients[client]] = player;
                     }
                 }
                 
                 server.SendPlayerData(clients,players.Values.ToArray());
-
-                
+                serverTick= (serverTick+1)%60;
 
             }
             Console.WriteLine("Tick Done");
@@ -220,7 +238,7 @@ public struct Received
 public struct ReceivedPlayerData
 {
     public IPEndPoint sender;
-    public PositionPacket data;
+    public object data;
 }
 
 public class UDP_Server
@@ -232,6 +250,7 @@ public class UDP_Server
         udpListener = new UdpClient(11_000);
 
     } 
+    public string getIP(){return udpListener.Client.LocalEndPoint.ToString();}
     public async Task<Received> Receive()
     {
         var result = await udpListener.ReceiveAsync();
@@ -244,10 +263,25 @@ public class UDP_Server
     public async Task<ReceivedPlayerData> ReceivePlayerData()
     {
         var result = await udpListener.ReceiveAsync();
+        int type = result.Buffer[0];
+        object packet = null;
+        switch(type)
+        {
+            case 0:
+            packet = DataPacketConvertor.fromBytes<MovementClientPacket>(result.Buffer,off:1);
+            break;
+            case 1:
+            packet = DataPacketConvertor.fromBytes<ShootingClientPacket>(result.Buffer,off:1);
+            break;
+
+            
+           
+        }
         return new ReceivedPlayerData()
         {
             sender = result.RemoteEndPoint,
-            data = DataPacketConvertor.fromBytes<PositionPacket>(result.Buffer)
+            
+            data = packet
         };
     }
     public void Send(string message,IPEndPoint client)

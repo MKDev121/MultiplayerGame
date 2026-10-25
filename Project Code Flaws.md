@@ -22,8 +22,8 @@ These issues affect the active game simulation after the clients have connected.
 | Flaw | What happens | Recommended direction |
 | --- | --- | --- |
 | Client-controlled movement deltas | The client sends `deltaX` and `deltaY`, and the server adds them directly to the player position. A modified client can send arbitrarily large movement or move through obstacles. | Send input commands to the server. The server should calculate movement, speed, timing, collision, and gameplay validity authoritatively. |
-| Movement depends on client frame rate | Input is sent from `Update()`, so clients with different frame rates send different numbers of movement packets and can move at different speeds. | Process movement on a fixed server tick using server-side time. |
-| No explicit movement speed or delta time | The server adds raw input values without speed, acceleration, or a time step. Movement speed depends on packet frequency and batching. | Define movement speed and apply `direction * speed * serverTickDelta`. |
+| ~~Movement depends on client frame rate~~ **Partially fixed** | Input is sampled in `Update()`, so clients with different frame rates send different numbers of variable-duration input packets. The client and server now apply each packet's recorded duration, but the server still trusts the client duration. | Validate or replace client duration server-side and limit accumulated input time. |
+| ~~No explicit movement speed or delta time~~ **Fixed for prototype** | Movement now uses an explicit speed (`10f`) and each input's `inputDuration` on both client and server. | Move the speed into shared configuration and make timing authoritative when hardening the protocol. |
 | Diagonal movement is faster | Horizontal and vertical input can both be `1`, producing a vector length of about `1.414`. | Normalize the input vector before applying speed. |
 | No server-side collision or bounds validation | The server accepts every resulting position, allowing movement outside the map, through walls, or through other gameplay constraints. | Validate movement against the authoritative world and reject or correct invalid movement. |
 | Client-provided player ID is trusted | The server copies `data.id` into the authoritative player state even though it already knows the sender's player ID from its endpoint. A client can impersonate another player. | Ignore the packet ID for identity and use the server-side client-to-player mapping. |
@@ -34,19 +34,19 @@ These issues affect the active game simulation after the clients have connected.
 
 | Flaw | What happens | Recommended direction |
 | --- | --- | --- |
-| `List<PositionPacket>` is accessed from multiple threads | The receive task adds to a list while the simulation loop enumerates and clears it. `List<T>` is not thread-safe, causing races, lost input, or enumeration errors. | Use `ConcurrentQueue<PositionPacket>` or synchronized input-buffer swapping at the start of each server tick. |
+| ~~`List<PositionPacket>` is accessed from multiple threads~~ **Fixed** | The receive task added to a list while the simulation loop enumerated and cleared it. `List<T>` is not thread-safe, causing races, lost input, or enumeration errors. | Replaced the per-player list with a `ConcurrentQueue<PositionPacket>` and process packets with `TryDequeue`. |
 | The receive task runs forever | `listeningTask` has an infinite loop and is never cancelled, awaited, or disposed. It can continue using state after the game stops. | Add a `CancellationToken`, stop the loop during shutdown, and observe task failures. |
 | Receive-task failures are not surfaced | The task is started without awaiting it, so socket or parsing failures can terminate the task without the main loop knowing. | Handle and report errors explicitly, then transition the server to a safe state. |
-| Client network data is shared with Unity callbacks without synchronization | `ListenToServer()` writes `players` while `FixedUpdate()` reads and sets it to `null`. A snapshot can be read while it is being replaced. | Receive a complete snapshot on the network side and hand it to the Unity main thread through a thread-safe queue or latest-snapshot slot. |
-| Snapshots can be discarded | Setting `players = null` can lose snapshots that arrive before the next `FixedUpdate()`. | Keep complete snapshots and deliberately choose whether to render the latest snapshot or interpolate between snapshots. |
+| Client network data is shared with Unity callbacks without complete synchronization | `players` is a `ConcurrentQueue`, but `latestPlayerSnapshot` is updated by `ListenToServer()` and read by `FixedUpdate()` without an explicit snapshot handoff or availability flag. | Queue complete snapshots and consume them on the Unity main thread, or publish the latest state through a synchronized handoff. |
+| ~~Snapshots can be discarded~~ **Fixed for the player-record queue** | Received player records are queued and drained by `UpdateStates()` instead of replacing the queue. | Preserve complete snapshots as units so records from different UDP packets cannot be mixed during interpolation. |
 
 ### UDP protocol and packet reliability
 
 | Flaw | What happens | Recommended direction |
 | --- | --- | --- |
-| Gameplay packets have no sequence number | The client cannot identify an old packet, a duplicate packet, or an out-of-order packet. | Add input sequence numbers and server snapshot/tick numbers. |
+| ~~Movement packets have no sequence number~~ **Fixed** | Movement commands now carry a client `sequence`, and snapshots carry `lastProcessedInput` for reconciliation. | Add a separate sequence or command identifier for other reliable gameplay commands. |
 | UDP packet loss is not handled | Lost movement or snapshot packets are silently discarded. | Use sequence numbers, resend only data that requires reliability, and make snapshots self-contained so the next snapshot can recover state. |
-| Duplicate and out-of-order packets are not handled | A duplicated movement packet can move a player twice; an old packet can be applied after a newer packet. | Reject stale input or snapshots and make packet processing sequence-aware. |
+| Duplicate and out-of-order packets are only partially handled | The server rejects duplicate or lower movement sequences, but it applies a newer sequence immediately. If sequence 3 arrives before sequence 2, it acknowledges 3 and later discards 2 even though 2 was never simulated. | Buffer out-of-order inputs and acknowledge only the highest contiguous processed sequence. |
 | No packet type or protocol version | The client assumes received data is player data, making future message types and malformed packets unsafe to handle. | Add a message header containing type, version, payload length, and sequence/tick information. |
 | Packet lengths are not validated | Short, malformed, or unexpected packets can cause deserialization failures or invalid state. | Validate packet length before deserializing `PositionPacket` or `PlayerData`. |
 | Raw struct serialization is fragile | `Marshal.StructureToPtr` depends on struct layout and runtime assumptions and has no explicit protocol compatibility or byte-order definition. | Use explicit field serialization or a versioned binary protocol with defined endianness and layout. |
@@ -56,9 +56,13 @@ These issues affect the active game simulation after the clients have connected.
 
 | Flaw | What happens | Recommended direction |
 | --- | --- | --- |
-| No client-side prediction | The local player moves only after a full input-to-server-to-client round trip, which creates visible input latency. | Predict local movement immediately, then reconcile with authoritative server snapshots. |
-| No reconciliation | There is no mechanism to compare predicted state with server state or replay inputs that the server has not acknowledged. | Include the last processed input sequence in snapshots and replay pending inputs after correction. |
-| No interpolation for remote players | The client directly applies each received position, so irregular packet arrival causes jitter, pauses, or small teleports. | Buffer snapshots briefly and interpolate remote players between server states. |
+| ~~No client-side prediction~~ **Fixed for the current prototype** | The client now applies movement immediately using the input's duration and stores the command for later replay. | Use shared movement simulation and validate input timing on the server. |
+| ~~No reconciliation~~ **Fixed for the current prototype** | The client starts from the authoritative position, removes acknowledged inputs, and replays unacknowledged inputs using their stored durations. | Add an explicit snapshot-available flag and perform the snapshot handoff on the Unity main thread. |
+| ~~No interpolation for remote players~~ **Fixed** | The client previously applied each received position directly, so irregular packet arrival caused jitter, pauses, or small teleports. | Remote players now interpolate between the two most recent snapshots using elapsed time. |
+| Remote interpolation has no snapshot buffer | Interpolation uses the latest snapshots immediately. Variable UDP delay, packet loss, or out-of-order delivery can still cause jitter because network arrival timing affects the rendered state. | Keep a short, timestamped snapshot buffer and render slightly behind real time so interpolation can continue through normal network variation. |
+| Complete snapshots are flattened into player records | `ListenToServer()` enqueues each player separately, so multiple UDP snapshots can be combined into one `receivedState` list and interpolated as if they were one snapshot. | Queue `PlayerData[]` (or a snapshot object) per datagram and interpolate matching player IDs between complete snapshots. |
+| Reconciliation is gated by `lastProcessedInput > 0` | A valid authoritative snapshot with acknowledgment zero is ignored by `FixedUpdate()`, so initial or correction-only state cannot be applied. | Track snapshot availability separately from the acknowledgment value. |
+| Shooting consumes the movement sequence | Shooting increments `inputSequence`, but `ShootingClientPacket` has no sequence and is not included in `lastProcessedInput`, creating gaps in movement sequences. | Use separate movement and shooting sequence spaces, or include both commands in one acknowledged command stream. |
 | Direct transform writes can conflict with physics | Assigning `transform.position` can fight Unity physics when player objects use rigidbodies or colliders. | Move physics-controlled objects through the appropriate Rigidbody API on the Unity main thread. |
 | Player IDs are used as array indexes without validation | A malformed or unauthorized ID can cause an `IndexOutOfRangeException` or update the wrong object. | Check IDs against the player and object array bounds before indexing. |
 | Snapshot shape is hard-coded to two players | Both the client loop and buffer allocation assume exactly two players. | Include a snapshot count or use a protocol that supports dynamic player/entity counts. |
@@ -78,15 +82,16 @@ These issues affect the active game simulation after the clients have connected.
 | --- | --- | --- |
 | A full snapshot is sent every server tick | The server sends data at about 60 Hz even when no state changed. This wastes bandwidth and work. | Use a suitable snapshot rate, send only changed state where appropriate, and measure the required update frequency. |
 | Every client receives every player | Bandwidth and serialization work grow approximately with the square of player count. | Add interest management, visibility/proximity filtering, and per-client snapshots. |
-| No server tick or snapshot identifier | Clients cannot determine the age or ordering of world state and cannot associate a snapshot with processed input. | Include authoritative server tick, snapshot sequence, and last processed input sequence. |
+| No server tick or snapshot identifier | Clients cannot determine the age or ordering of world state. `lastProcessedInput` acknowledges input but does not order snapshots. | Include authoritative server tick or snapshot sequence in each datagram, alongside `lastProcessedInput`. |
+| Client-provided input duration is trusted | A client can send an arbitrarily large `inputDuration` and move farther than the intended speed. | Clamp duration and input magnitude, or derive elapsed simulation time from server-controlled timing. |
 
 ### Priority order for gameplay improvements
 
-1. Make server input processing and player buffers thread-safe.
-2. Stop trusting client-provided player IDs and validate every packet.
-3. Replace raw client movement deltas with validated input and fixed server-tick movement.
-4. Add packet sequence numbers, server tick numbers, and packet type/version headers.
-5. Fix serializer cleanup and remove silent `null` failure behavior.
-6. Add client snapshot handoff, remote-player interpolation, and local-player prediction/reconciliation.
+1. Make the authoritative snapshot handoff and complete snapshot buffers thread-safe.
+2. Buffer out-of-order inputs and acknowledge only contiguous input sequences.
+3. Stop trusting client-provided durations and validate every input.
+4. Stop trusting client-provided player IDs and validate every packet.
+5. Add server tick/snapshot identifiers and packet type/version headers.
+6. Fix serializer cleanup and remove silent `null` failure behavior.
 7. Add collision validation, disconnect timeouts, and authoritative gameplay state.
 8. Optimize snapshot frequency and add interest management when the player count grows.

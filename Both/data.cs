@@ -4,35 +4,55 @@ using System.Drawing;
 using System.Runtime.InteropServices;
 namespace MyExternalLibrary{
 
+
+
+
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public struct PositionPacket
+public struct MovementClientPacket
 {
-    public int id;
-   public float deltaX,deltaY; //position 
-    
+  
+    public int sequence;
+    public float deltaX,deltaY; //position 
+    public float inputDuration;
+};
+
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public struct ShootingClientPacket
+{
+   
+    public bool moving;
+    public float x,y,z; // gun direction        
+  
 };
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
 public struct PlayerData
 {
     public int id;
+    public int lastProcessedInput;
     public float x,y;
     public int health;
 
     
 };
+public struct InputStruct
+{
+    public int tick;
+    public float horizontal,vertical;
+    
+}
 
 public static class DataPacketConvertor
 {
 
-    public static T fromBytes<T>(byte[] arr, int i=0)
+    public static T fromBytes<T>(byte[] arr, int i=0,int off=0)
     {
         
         T str = default;
         int size = Marshal.SizeOf(str);
         IntPtr ptr = Marshal.AllocHGlobal(size);
 
-        Marshal.Copy(arr,i*size,ptr,size);
+        Marshal.Copy(arr,off+i*size,ptr,size);
         
         str = (T)Marshal.PtrToStructure(ptr,str.GetType());
         Marshal.FreeHGlobal(ptr);
@@ -81,14 +101,15 @@ public static class DataPacketConvertor
                 return null;
         }
     }
-    public static byte[] getBytes<T>(T data)
+    public static byte[] getBytes<T>(T data,int type=0)
     {
         int size = Marshal.SizeOf(data);
-        byte[] byteStream = new byte[size];
-        
+        byte[] byteStream = new byte[size+1];
+        byteStream[0]=(byte)type;
         IntPtr ptr =Marshal.AllocHGlobal(size);
         Marshal.StructureToPtr(data,ptr,true);
-        Marshal.Copy(ptr,byteStream,0,size);
+        Marshal.Copy(ptr,byteStream,1,size);
+        
         return byteStream;
     }
 }

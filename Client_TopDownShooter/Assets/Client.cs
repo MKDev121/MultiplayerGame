@@ -7,6 +7,10 @@ using System.Threading.Tasks;
 using MyExternalLibrary;
 using System;
 using NUnit.Framework;
+using System.Collections.Concurrent;
+using System.ComponentModel.Design.Serialization;
+using System.Linq;
+using Unity.VisualScripting;
 
 
 
@@ -26,55 +30,81 @@ public class Client : MonoBehaviour
     public InputField inputField;
     public Transform[] spawnLocations;
 
-    public PlayerData[] players;
+    public ConcurrentQueue<PlayerData> players;
      IPEndPoint remoteIP;
     int clientID;
     bool connectedToServer =false;
     public GameObject[] playerObjects;
+    bool moving;
+    public Text interpolationStatus;    
+    int tick =0;
+
+    int inputSequence=1;
+    public PlayerData latestPlayerSnapshot;
     void Start()
     {
         
         remoteIP= new IPEndPoint(IPAddress.Loopback,11_000);
         client = new UdpClient();
-        ConnectToServer();//exception handling may be needed
+        //ConnectToServer();//exception handling may be needed
         Debug.Log("This is executed just after Connect To Server");
 
 
     }   
     void Update()
     {
-        if(connectedToServer){
-        
-        float horizontal = Input.GetAxis("Horizontal");
-        float vertical = Input.GetAxis("Vertical");
-        if (Mathf.Abs(horizontal) > 0.01f || Mathf.Abs(vertical) > 0.01f)
+        interpolationStatus.text="Interpolation: "+ LagCompensation.canInterpolate.ToString();
+        if(Input.GetMouseButtonDown(0))
         {
-            PositionPacket positionPacket = new PositionPacket();
-            positionPacket.deltaX=horizontal;
-            positionPacket.deltaY=vertical;
-            positionPacket.id=clientID;
-            byte[] data = DataPacketConvertor.getBytes(positionPacket);
+            ShootingClientPacket packet = new ShootingClientPacket();
+            packet.moving=moving;
+            packet.x=transform.forward.x;
+            packet.y=transform.forward.y;
+            packet.z=transform.forward.z;
+            
+
+            byte[] data = DataPacketConvertor.getBytes(packet,1);
             client.Send(data,data.Length,remoteIP);
-        }
+            inputSequence++;
         }
 
+        if(connectedToServer)
+        {
+        
+            float horizontal = Input.GetAxis("Horizontal");
+            float vertical = Input.GetAxis("Vertical");
+            if (Mathf.Abs(horizontal) > 0.01f || Mathf.Abs(vertical) > 0.01f)
+            {
+                MovementClientPacket packet = new MovementClientPacket();
+                packet.deltaX=horizontal;
+                packet.deltaY=vertical;
+                packet.inputDuration=Time.deltaTime;
+                packet.sequence=inputSequence;
+
+                byte[] data = DataPacketConvertor.getBytes(packet,0);
+                client.Send(data,data.Length,remoteIP);
+                moving=true;
+
+            
+                
+                LagCompensation.ClientSidePrediction(packet,playerObjects[clientID]);
+                inputSequence++;
+            }
+            else
+            {
+                moving=false;
+            }
+        }
     }
     void FixedUpdate()
     {
-        try{
-        if(playerObjects.Length>0&&players!=null){
-            for(int i=0;i<2;i++)
-            {
-                playerObjects[players[i].id].transform.position=new Vector3(players[i].x,playerObjects[i].transform.position.y,players[i].y); 
-                
-            }
-        players=null;
-        }
-        }catch(Exception e)
+
+        if (latestPlayerSnapshot.lastProcessedInput>0)
         {
-            Debug.Log(e);
-            Debug.Log(e.Source);  
+            LagCompensation.ServerReconciliation(latestPlayerSnapshot,playerObjects[clientID]);
         }
+        LagCompensation.LinearInterpolate(playerObjects,clientID);
+        tick++;
     }
     public void SendCNFMessage(string message)
     {
@@ -82,11 +112,15 @@ public class Client : MonoBehaviour
             byte[] data = Encoding.UTF8.GetBytes(message);
             client.Send(data,data.Length,remoteIP);
     }
-
+    public void JoinServer(string ip)
+    {
+        remoteIP.Address=IPAddress.Parse(ip);
+        ConnectToServer();
+    }
     async Task ConnectToServer()
     {
        
-        Debug.Log(remoteIP.Address);
+        Debug.Log(remoteIP.ToString());
 
         
         while(true)
@@ -101,17 +135,23 @@ public class Client : MonoBehaviour
                 clientID=acknowledgement[acknowledgement.Length-1]-'0';
                 SendCNFMessage("CNF");
 
-            }else if(acknowledgement.Contains("Start"))
+            }
+            else if(acknowledgement.Contains("Start"))
             {
                 connectionState=ConnectionState.Connected;
                 messageBox.SetActive(true);
                 playerObjects= new GameObject[2];
+                players = new ConcurrentQueue<PlayerData>();
+                
                 //Instantiate Players
                 for(int i=0;i<2;i++)
                 {
                    GameObject obj= Instantiate(playerObject,spawnLocations[i].position,Quaternion.identity);
                    playerObjects[i]=obj;
+                   playerObjects[i].GetComponentInChildren<Camera>().enabled=false;
                 }
+                GetComponent<Camera>().enabled=false;
+                playerObjects[clientID].GetComponentInChildren<Camera>().enabled=true;
                 SendCNFMessage("ACK");
                 connectedToServer=true;
                 Task confirmationTask= Task.Run(async () =>
@@ -140,21 +180,20 @@ public class Client : MonoBehaviour
     }
     async Task ListenToServer()
     {
-        while(true){
+        while(true)
+        {
+
             var message = await client.ReceiveAsync();
-            if(players==null)
-            {
-                players = new PlayerData[2];
-            }
-            for(int i=0;i<players.Length;i++)
+            for(int i=0;i<2;i++)
             {
                 PlayerData pl=DataPacketConvertor.fromBytes<PlayerData>(message.Buffer,i);
                 if(clientID==pl.id)
                     Debug.Log($"pl_{pl.id} x:{pl.x} y:{pl.y}");
-                players[pl.id]=pl;
+                players.Enqueue(pl);
             }            
+            
+            LagCompensation.UpdateStates(players,ref latestPlayerSnapshot,clientID);
 
-          
     
         }
     }
