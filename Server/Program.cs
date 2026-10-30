@@ -1,4 +1,4 @@
-﻿// See https://aka.ms/new-console-template for more information
+// See https://aka.ms/new-console-template for more information
 
 using System.Data;
 using System.Data.SqlTypes;
@@ -17,7 +17,6 @@ internal class Program
 {
     private static async Task Main(string[] args)
     {
-        int port = 11_000;
         int maxClients = 2;
         int clientsConnected = 0;
         int confirmedClients = 0;
@@ -41,7 +40,7 @@ internal class Program
                 if (received.message.Contains("REQ")&&clientsConnected<maxClients)// A client wants to connect
                 {
                     
-                    server.Send("ACK_"+clientsConnected.ToString(), received.sender);
+                    await server.Send("ACK_"+clientsConnected.ToString(), received.sender);
                     clients.Add(received.sender,clientsConnected++);
                     
 
@@ -59,7 +58,7 @@ internal class Program
                                     Interlocked.Exchange(ref confirmedClients,0);
                                     foreach(IPEndPoint client in clients.Keys)
                                     {
-                                        server.Send("ACK_"+clients[client].ToString(),client);
+                                        await server.Send("ACK_"+clients[client].ToString(),client);
                                     }
                                 }else{
                                     timer.Dispose();
@@ -110,9 +109,9 @@ internal class Program
                 Interlocked.Exchange(ref confirmedClients,0);
                 foreach(IPEndPoint client in clients.Keys)
                 {
-                    server.Send("Start",client);
+                    await server.Send("Start",client);
                 }
-                StartTimer();
+                Task startTimerTask = StartTimer();
                 while(true)
                 {
                     Received result=await server.Receive();
@@ -126,12 +125,13 @@ internal class Program
                         {
 
                             playerDataBuffers.Add(i,new ConcurrentQueue<object>());//data which server receives
-                            players.Add(i,new PlayerData());//data which server sends
+                            players.Add(i,new PlayerData { id = i, health = 100 });//data which server sends
                         }
                         break;
                     }
-                    
                 }
+                cts.Cancel();
+                await startTimerTask;
             }
             async Task StartTimer()
             {
@@ -143,7 +143,7 @@ internal class Program
                         Interlocked.Exchange(ref confirmedClients,0);
                         foreach(IPEndPoint client in clients.Keys)
                         {
-                            server.Send("Start",client);
+                            await server.Send("Start",client);
                         }
                     }else
                     {
@@ -161,14 +161,50 @@ internal class Program
         await Game();
         async Task Game()
         {
+            const float maxShootRange = 20f;
+            const float maxHitDistanceFromRay = 0.75f;
+            const int shotDamage = 25;
+            const int historyLength = 720;
+            const int maxRewindTicks = 720;
+            const int shotCooldownTicks = 6;
+            const int aiShotCooldownTicks = 30;
+            const int disconnectTimeoutTicks = 30; // ~0.5s at 60 Hz
+            var snapshotHistory = new Queue<KeyValuePair<int, PlayerData[]>>();
+            var pendingInputs = new Dictionary<int, SortedDictionary<int, MovementClientPacket>>();
+            var nextInputSequence = new Dictionary<int, int>();
+            var lastShotTick = new Dictionary<int, int>();
+            var lastSeenTick = new Dictionary<int, int>();
+            var isDisconnected = new Dictionary<int, bool>();
+            var bannedClients = new HashSet<IPEndPoint>();
+            for (int playerId = 0; playerId < clientsConnected; playerId++)
+            {
+                pendingInputs[playerId] = new SortedDictionary<int, MovementClientPacket>();
+                nextInputSequence[playerId] = 1;
+                lastShotTick[playerId] = -shotCooldownTicks;
+                lastSeenTick[playerId] = 0;
+                isDisconnected[playerId] = false;
+            }
 
             Task listeningTask = Task.Run(async () =>
             {
                 while (true)
                 {
-                    ReceivedPlayerData received = await server.ReceivePlayerData();
+                    ReceivedPlayerData received;
+                    try
+                    {
+                        received = await server.ReceivePlayerData();
+                    }
+                    catch (SocketException exception)
+                    {
+                        Console.WriteLine($"[Network] Receive socket warning (client may have disconnected): {exception.Message}");
+                        continue;
+                    }
+                    catch (ObjectDisposedException)
+                    {
+                        break;
+                    }
                     
-                    if (clients.ContainsKey(received.sender))
+                    if (received.data != null && clients.ContainsKey(received.sender))
                     {
                         playerDataBuffers[clients[received.sender]].Enqueue(received.data);
                     }
@@ -186,41 +222,262 @@ internal class Program
                 //logic 
                 foreach (IPEndPoint client in clients.Keys)
                 {
-                    if(!playerDataBuffers[clients[client]].IsEmpty)
+                    if (bannedClients.Contains(client))
+                        continue;
+
+                    int playerId = clients[client];
+                    PlayerData player = players[playerId];
+
+                    while (playerDataBuffers[playerId].TryDequeue(out object? data))
                     {
-
-                        PlayerData player = players[clients[client]];
-
-                        while (playerDataBuffers[clients[client]].TryDequeue(out object data))
+                        lastSeenTick[playerId] = serverTick;
+                        if (isDisconnected[playerId])
                         {
-                            if(data is MovementClientPacket mov){
-                                if(player.lastProcessedInput<mov.sequence){
-                                    player.x += mov.deltaX*mov.inputDuration*10f;
-                                    player.y += mov.deltaY*mov.inputDuration*10f;
-                                    player.lastProcessedInput=Math.Max(player.lastProcessedInput, mov.sequence);
-                                }
-                            }else if(data is ShootingClientPacket shoot)
-                            {
-                                //simple linear raycasting algorithm
-                                Console.WriteLine($"player_{clients[client]} is shooting in dir:({shoot.x},{shoot.y},{shoot.z}) and moving:{shoot.moving}");
-
-                            }
-                            player.id=clients[client];
-                           
+                            isDisconnected[playerId] = false;
+                            Console.WriteLine($"[Chronos Server AI] player_{playerId} reconnected at serverTick={serverTick}. Resuming live client control.");
                         }
-                        
-                        Console.WriteLine($"pl_{player.id}, x: {player.x} y: {player.y}");
-                        //Console.WriteLine($"Calculated values of Player_{clients[client]}");
-                      
-                        players[clients[client]] = player;
+
+                        if(data is MovementClientPacket mov)
+                        {
+                            const float maxInputDuration = 0.1f;
+                            const float maxInputMagnitude = 1f;
+                            float duration = Math.Clamp(mov.inputDuration, 0f, maxInputDuration);
+                            float horizontal = Math.Clamp(mov.deltaX, -maxInputMagnitude, maxInputMagnitude);
+                            float vertical = Math.Clamp(mov.deltaY, -maxInputMagnitude, maxInputMagnitude);
+
+                            if (mov.sequence >= nextInputSequence[playerId] &&
+                                !pendingInputs[playerId].ContainsKey(mov.sequence))
+                            {
+                                pendingInputs[playerId][mov.sequence] = new MovementClientPacket
+                                {
+                                    sequence = mov.sequence,
+                                    deltaX = horizontal,
+                                    deltaY = vertical,
+                                    inputDuration = duration
+                                };
+                            }
+                        }
+                        else if(data is ShootingCommand shotCommand)
+                        {
+                            if (VerifyShot(playerId, shotCommand, out int targetPlayerId))
+                            {
+                                lastShotTick[playerId] = serverTick;
+                                PlayerData target = players[targetPlayerId];
+                                target.health = Math.Max(0, target.health - shotDamage);
+                                players[targetPlayerId] = target;
+                                if (target.health == 0)
+                                    player.killCount++;
+                                Console.WriteLine($"[Shoot] player_{playerId} HIT player_{targetPlayerId} (targetHealth={target.health}, kills={player.killCount})");
+                            }
+                            else
+                            {
+                                Console.WriteLine($"[Shoot] player_{playerId} MISS/REJECTED (observedTick={shotCommand.shot.observedServerTick}, serverTick={serverTick})");
+                            }
+                        }
+                        else if(data is ChronosReconnectionCommand reconCommand)
+                        {
+                            int opponentId = playerId == 0 ? 1 : 0;
+                            if (!TryGetHistoricalSnapshot(reconCommand.header.startServerTick, opponentId, out PlayerData histOpponent))
+                                histOpponent = players[opponentId];
+                            if (!TryGetHistoricalSnapshot(reconCommand.header.startServerTick, playerId, out PlayerData histPlayer))
+                                histPlayer = players[playerId];
+
+                            TimelineLedgerTick[] serverLedger = ChronosModel.GenerateDeterministicLedger(
+                                reconCommand.header.startServerTick,
+                                reconCommand.header.tickCount,
+                                histOpponent.x,
+                                histOpponent.y,
+                                histOpponent.health,
+                                histPlayer.x,
+                                histPlayer.y);
+
+                            VerificationResult audit = ChronosModel.VerifyReconnectionPayload(
+                                serverLedger,
+                                reconCommand.ledger,
+                                ChronosModel.DefaultErrorTolerance);
+
+                            Console.WriteLine($"[Chronos Audit] player_{playerId} Reconnection Verdict={audit.verdict} Reason={audit.reason} Action={audit.action} (ticks={reconCommand.header.tickCount})");
+                            await server.Send($"CHRONOS:{audit.verdict}:{audit.reason}:{audit.action}", client);
+
+                            if (!audit.verified)
+                            {
+                                bannedClients.Add(client);
+                                Console.WriteLine($"[Chronos Audit] Connection terminated for player_{playerId} ({client}) due to {audit.reason}.");
+                            }
+                        }
+                        else if(data is HeartbeatClientPacket)
+                        {
+                            // Heartbeat processed above via lastSeenTick update
+                        }
                     }
+
+                    if (bannedClients.Contains(client))
+                        continue;
+
+                    if (!isDisconnected[playerId] && (serverTick - lastSeenTick[playerId]) >= disconnectTimeoutTicks)
+                    {
+                        isDisconnected[playerId] = true;
+                        pendingInputs[playerId].Clear();
+                        Console.WriteLine($"[Chronos Server AI] player_{playerId} disconnected (no packets for {serverTick - lastSeenTick[playerId]} ticks). Generating snapshots via Chronos Model on server.");
+                    }
+
+                    if (isDisconnected[playerId])
+                    {
+                        int opponentId = playerId == 0 ? 1 : 0;
+                        PlayerData opponent = players[opponentId];
+                        float aiHp = player.health > 0 ? player.health : 100f;
+
+                        TimelineLedgerTick aiTick = ChronosModel.SimulateSplinterTick(
+                            serverTick,
+                            player.x,
+                            player.y,
+                            aiHp,
+                            opponent.x,
+                            opponent.y);
+
+                        player.x = MathF.Round((player.x + aiTick.mx * serverDelta * 10f) * 100f) / 100f;
+                        player.y = MathF.Round((player.y + aiTick.my * serverDelta * 10f) * 100f) / 100f;
+
+                        if (aiTick.triggerShoot == 1 &&
+                            player.health > 0 &&
+                            opponent.health > 0 &&
+                            serverTick - lastShotTick[playerId] >= aiShotCooldownTicks)
+                        {
+                            float toTargetX = opponent.x - player.x;
+                            float toTargetY = opponent.y - player.y;
+                            float targetDistance = MathF.Sqrt(toTargetX * toTargetX + toTargetY * toTargetY);
+                            if (targetDistance > 0.0001f && targetDistance <= maxShootRange)
+                            {
+                                lastShotTick[playerId] = serverTick;
+                                opponent.health = Math.Max(0, opponent.health - shotDamage);
+                                players[opponentId] = opponent;
+                                if (opponent.health == 0)
+                                    player.killCount++;
+                                Console.WriteLine($"[Chronos Server AI Shoot] AI player_{playerId} (intent={(MacroIntent)aiTick.intent}) HIT player_{opponentId} (targetHealth={opponent.health}, kills={player.killCount})");
+                            }
+                        }
+                    }
+                    else
+                    {
+                        while (pendingInputs[playerId].Count > 0)
+                        {
+                            int seq = pendingInputs[playerId].Keys.First();
+                            MovementClientPacket input = pendingInputs[playerId][seq];
+                            pendingInputs[playerId].Remove(seq);
+                            player.x += input.deltaX * input.inputDuration * 10f;
+                            player.y += input.deltaY * input.inputDuration * 10f;
+                            player.lastProcessedInput = input.sequence;
+                            nextInputSequence[playerId] = input.sequence + 1;
+                        }
+                    }
+
+                    player.id = playerId;
+                    player.serverTick = serverTick;
+                    players[playerId] = player;
+                    Console.WriteLine($"pl_{player.id}, x: {player.x} y: {player.y}");
                 }
                 
-                server.SendPlayerData(clients,players.Values.ToArray());
-                serverTick= (serverTick+1)%60;
+                await server.SendPlayerData(clients, players.Values.ToArray(), bannedClients);
+                snapshotHistory.Enqueue(
+                    new KeyValuePair<int, PlayerData[]>(
+                        serverTick,
+                        players.Values.ToArray()));
+                while (snapshotHistory.Count > historyLength)
+                    snapshotHistory.Dequeue();
+                serverTick++;
 
             }
             Console.WriteLine("Tick Done");
+
+            bool VerifyShot(
+                int shooterId,
+                ShootingCommand command,
+                out int targetPlayerId)
+            {
+                ShootingClientPacket shot = command.shot;
+                targetPlayerId = -1;
+                if (shot.inputCount != 0 ||
+                    command.inputs.Length != 0 ||
+                    serverTick - shot.observedServerTick < 0 ||
+                    serverTick - shot.observedServerTick > maxRewindTicks ||
+                    serverTick - lastShotTick[shooterId] < shotCooldownTicks)
+                    return false;
+
+                if (!TryGetHistoricalSnapshot(
+                        shot.observedServerTick,
+                        shooterId,
+                        out PlayerData historicalShooter))
+                    return false;
+
+                PlayerData currentShooter = players[shooterId];
+                if (currentShooter.health <= 0 || historicalShooter.health <= 0)
+                    return false;
+
+                float shotDirX = shot.x;
+                float shotDirY = shot.z;
+                float shotDirMagnitude = MathF.Sqrt(shotDirX * shotDirX + shotDirY * shotDirY);
+                if (shotDirMagnitude < 0.0001f)
+                    return false;
+                shotDirX /= shotDirMagnitude;
+                shotDirY /= shotDirMagnitude;
+
+                float closestDistance = maxShootRange;
+                for (int candidateId = 0; candidateId < clientsConnected; candidateId++)
+                {
+                    if (candidateId == shooterId ||
+                        !TryGetHistoricalSnapshot(
+                            shot.observedServerTick,
+                            candidateId,
+                            out PlayerData historicalTarget) ||
+                        historicalTarget.health <= 0 ||
+                        players[candidateId].health <= 0)
+                    {
+                        continue;
+                    }
+
+                    float toTargetX = historicalTarget.x - historicalShooter.x;
+                    float toTargetY = historicalTarget.y - historicalShooter.y;
+                    float targetDistance = MathF.Sqrt(
+                        toTargetX * toTargetX + toTargetY * toTargetY);
+                    if (targetDistance < 0.0001f || targetDistance > maxShootRange)
+                        continue;
+
+                    float perpendicularDistance = MathF.Abs(
+                        toTargetX * shotDirY - toTargetY * shotDirX);
+                    if (perpendicularDistance <= maxHitDistanceFromRay &&
+                        targetDistance < closestDistance)
+                    {
+                        closestDistance = targetDistance;
+                        targetPlayerId = candidateId;
+                    }
+                }
+
+                return targetPlayerId >= 0;
+            }
+
+            bool TryGetHistoricalSnapshot(
+                int requestedTick,
+                int playerId,
+                out PlayerData player)
+            {
+                foreach (KeyValuePair<int, PlayerData[]> snapshot in snapshotHistory)
+                {
+                    if (snapshot.Key != requestedTick)
+                        continue;
+
+                    foreach (PlayerData candidate in snapshot.Value)
+                    {
+                        if (candidate.id == playerId)
+                        {
+                            player = candidate;
+                            return true;
+                        }
+                    }
+                }
+
+                player = default;
+                return false;
+            }
             
 
 
@@ -238,7 +495,7 @@ public struct Received
 public struct ReceivedPlayerData
 {
     public IPEndPoint sender;
-    public object data;
+    public object? data;
 }
 
 public class UDP_Server
@@ -250,7 +507,7 @@ public class UDP_Server
         udpListener = new UdpClient(11_000);
 
     } 
-    public string getIP(){return udpListener.Client.LocalEndPoint.ToString();}
+    public string getIP(){return udpListener.Client.LocalEndPoint?.ToString() ?? "unknown";}
     public async Task<Received> Receive()
     {
         var result = await udpListener.ReceiveAsync();
@@ -263,19 +520,85 @@ public class UDP_Server
     public async Task<ReceivedPlayerData> ReceivePlayerData()
     {
         var result = await udpListener.ReceiveAsync();
+        if (result.Buffer.Length < 1)
+            return new ReceivedPlayerData { sender = result.RemoteEndPoint, data = null };
+
         int type = result.Buffer[0];
-        object packet = null;
+        object? packet = null;
         switch(type)
         {
             case 0:
-            packet = DataPacketConvertor.fromBytes<MovementClientPacket>(result.Buffer,off:1);
+                if (result.Buffer.Length == 1 + Marshal.SizeOf<MovementClientPacket>())
+                    packet = DataPacketConvertor.fromBytes<MovementClientPacket>(result.Buffer,off:1);
             break;
             case 1:
-            packet = DataPacketConvertor.fromBytes<ShootingClientPacket>(result.Buffer,off:1);
-            break;
+                int headerSize = Marshal.SizeOf<ShootingClientPacket>();
+                int inputSize = Marshal.SizeOf<MovementClientPacket>();
+                if (result.Buffer.Length >= 1 + headerSize)
+                {
+                    ShootingClientPacket shot =
+                        DataPacketConvertor.fromBytes<ShootingClientPacket>(
+                            result.Buffer,
+                            off: 1);
+                    const int maxShotInputs = 64;
+                    int remainingBytes = result.Buffer.Length - 1 - headerSize;
+                    if (shot.inputCount >= 0 &&
+                        shot.inputCount <= maxShotInputs &&
+                        remainingBytes == shot.inputCount * inputSize)
+                    {
+                        MovementClientPacket[] inputs = new MovementClientPacket[shot.inputCount];
+                        for (int i = 0; i < inputs.Length; i++)
+                        {
+                            inputs[i] = DataPacketConvertor.fromBytes<MovementClientPacket>(
+                                result.Buffer,
+                                i,
+                                1 + headerSize);
+                        }
 
-            
-           
+                        packet = new ShootingCommand
+                        {
+                            shot = shot,
+                            inputs = inputs
+                        };
+                    }
+                }
+            break;
+            case 2:
+                int chronosHeaderSize = Marshal.SizeOf<ChronosReconnectionHeader>();
+                int ledgerTickSize = Marshal.SizeOf<TimelineLedgerTick>();
+                if (result.Buffer.Length >= 1 + chronosHeaderSize)
+                {
+                    ChronosReconnectionHeader reconHeader =
+                        DataPacketConvertor.fromBytes<ChronosReconnectionHeader>(
+                            result.Buffer,
+                            off: 1);
+                    const int maxLedgerTicks = 600;
+                    int remainingLedgerBytes = result.Buffer.Length - 1 - chronosHeaderSize;
+                    if (reconHeader.tickCount >= 0 &&
+                        reconHeader.tickCount <= maxLedgerTicks &&
+                        remainingLedgerBytes == reconHeader.tickCount * ledgerTickSize)
+                    {
+                        TimelineLedgerTick[] ledger = new TimelineLedgerTick[reconHeader.tickCount];
+                        for (int i = 0; i < ledger.Length; i++)
+                        {
+                            ledger[i] = DataPacketConvertor.fromBytes<TimelineLedgerTick>(
+                                result.Buffer,
+                                i,
+                                1 + chronosHeaderSize);
+                        }
+
+                        packet = new ChronosReconnectionCommand
+                        {
+                            header = reconHeader,
+                            ledger = ledger
+                        };
+                    }
+                }
+            break;
+            case 3:
+                if (result.Buffer.Length == 1 + Marshal.SizeOf<HeartbeatClientPacket>())
+                    packet = DataPacketConvertor.fromBytes<HeartbeatClientPacket>(result.Buffer, off: 1);
+            break;
         }
         return new ReceivedPlayerData()
         {
@@ -284,26 +607,36 @@ public class UDP_Server
             data = packet
         };
     }
-    public void Send(string message,IPEndPoint client)
+    public async Task Send(string message,IPEndPoint client)
     {
         byte[]  bytes = Encoding.UTF8.GetBytes(message);
-        udpListener.SendAsync(bytes,bytes.Length,client);
-
+        try
+        {
+            await udpListener.SendAsync(bytes,bytes.Length,client);
+        }
+        catch (SocketException)
+        {
+            // Ignore transient send errors when a client socket is disconnected
+        }
     }
-    public void SendPlayerData(Dictionary<IPEndPoint,int> clients,PlayerData[]players)
+    public async Task SendPlayerData(Dictionary<IPEndPoint,int> clients, PlayerData[] players, HashSet<IPEndPoint>? bannedClients = null)
     {
         byte[] bytes = DataPacketConvertor.getBytes<PlayerData>(players);
         foreach (IPEndPoint remoteIP in clients.Keys)
         {
-            udpListener.SendAsync(bytes,bytes.Length,remoteIP);
+            if (bannedClients != null && bannedClients.Contains(remoteIP))
+                continue;
+            try
+            {
+                await udpListener.SendAsync(bytes,bytes.Length,remoteIP);
+            }
+            catch (SocketException)
+            {
+                // Ignore transient send errors when a client socket is disconnected
+            }
         }
     }
 
 
     
 }
-
-
-
-
-

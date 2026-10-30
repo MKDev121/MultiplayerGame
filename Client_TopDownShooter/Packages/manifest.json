@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "com.coplaydev.unity-mcp": "file:/home/meet-kareliya/Downloads/unity-mcp-main/MCPForUnity",
     "com.mycompany.corelibrary": "file:/home/meet-kareliya/Meet/Projects/MultiplayerGame/Both",
     "com.unity.ai.navigation": "2.0.14",
     "com.unity.collab-proxy": "2.13.6",

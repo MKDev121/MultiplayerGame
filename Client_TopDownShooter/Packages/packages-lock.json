@@ -1,5 +1,21 @@
 {
   "dependencies": {
+    "com.coplaydev.unity-mcp": {
+      "version": "file:/home/meet-kareliya/Downloads/unity-mcp-main/MCPForUnity",
+      "depth": 0,
+      "source": "local",
+      "dependencies": {
+        "com.unity.modules.animation": "1.0.0",
+        "com.unity.modules.imageconversion": "1.0.0",
+        "com.unity.modules.physics": "1.0.0",
+        "com.unity.modules.physics2d": "1.0.0",
+        "com.unity.modules.uielements": "1.0.0",
+        "com.unity.modules.screencapture": "1.0.0",
+        "com.unity.modules.unitywebrequest": "1.0.0",
+        "com.unity.nuget.newtonsoft-json": "3.0.2",
+        "com.unity.test-framework": "1.1.31"
+      }
+    },
     "com.mycompany.corelibrary": {
       "version": "file:/home/meet-kareliya/Meet/Projects/MultiplayerGame/Both",
       "depth": 0,
@@ -96,6 +112,13 @@
     "com.unity.nuget.mono-cecil": {
       "version": "1.11.6",
       "depth": 3,
+      "source": "registry",
+      "dependencies": {},
+      "url": "https://packages.unity.com"
+    },
+    "com.unity.nuget.newtonsoft-json": {
+      "version": "3.2.2",
+      "depth": 1,
       "source": "registry",
       "dependencies": {},
       "url": "https://packages.unity.com"

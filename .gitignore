@@ -107,3 +107,6 @@ UIElementsSchema/
 
 # Auto-generated cache in Assets folder
 [Aa]ssets/[Ss]ceneDependencyCache*
+
+# Large raw Kaggle dataset (cleaned 12,000-row baseline CSV is tracked)
+Data/RawBehavior/csgo_round_snapshots.csv

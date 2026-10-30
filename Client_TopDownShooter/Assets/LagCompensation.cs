@@ -54,10 +54,19 @@ public class LagCompensation : MonoBehaviour
     }
     public static void ClientSidePrediction(MovementClientPacket input,GameObject player)
     {
-        Vector3 result = new Vector3(input.deltaX,0f,input.deltaY)*Time.deltaTime*10f;
+        Vector3 result = new Vector3(input.deltaX,0f,input.deltaY)*input.inputDuration*10f;
         player.transform.position += result;
         inputHistory.Enqueue(input);
 
+    }
+    public static MovementClientPacket[] GetInputsAfter(
+        int baseInputSequence,
+        int maxInputs)
+    {
+        return inputHistory
+            .Where(input => input.sequence > baseInputSequence)
+            .Take(maxInputs)
+            .ToArray();
     }
     public static void ServerReconciliation(PlayerData serverData,GameObject player)
     {
@@ -84,18 +93,38 @@ public class LagCompensation : MonoBehaviour
 
     }   
 
-    public static void UpdateStates(ConcurrentQueue<PlayerData> playerDatas,ref PlayerData latestSnapShot,int clientID)
+    public static bool UpdateStates(
+        PlayerData[] snapshot,
+        ref PlayerData latestSnapShot,
+        ref int latestServerTick,
+        int clientID)
     {
-        List<PlayerData> receivedState = new List<PlayerData>();
-            while(playerDatas.TryDequeue(out PlayerData player))
+        if (snapshot == null || snapshot.Length == 0)
+            return false;
+
+        int snapshotTick = snapshot[0].serverTick;
+        for (int i = 1; i < snapshot.Length; i++)
+            snapshotTick = Mathf.Max(snapshotTick, snapshot[i].serverTick);
+
+        if (snapshotTick <= latestServerTick)
+            return false;
+
+        latestServerTick = snapshotTick;
+        bool foundLocalPlayer = false;
+        List<PlayerData> receivedState = new List<PlayerData>(snapshot.Length);
+        foreach (PlayerData player in snapshot)
+        {
+            if(player.id == clientID)
             {
-                if(player.id==clientID)
-                    latestSnapShot=player;
-             receivedState.Add(player);
+                latestSnapShot = player;
+                foundLocalPlayer = true;
             }
 
+            receivedState.Add(player);
+        }
+
         if (receivedState.Count == 0)
-            return;
+            return foundLocalPlayer;
 
         lock (stateLock)
         {
@@ -106,8 +135,9 @@ public class LagCompensation : MonoBehaviour
             currentState.AddRange(nextState);
             nextState.Clear();
             nextState.AddRange(receivedState);
-            
         }
+
+        return foundLocalPlayer;
     }
 
 }
