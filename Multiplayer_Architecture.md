@@ -132,18 +132,22 @@ sequenceDiagram
 
 The AI brain is split into two deterministic layers trained via [`Data/train_and_transpile_chronos.py`](Data/train_and_transpile_chronos.py) (`random_state = 42`) and transpiled directly into native C# `if/else` trees (`0.03 ms` execution time, `< 50 KB` memory footprint):
 
-1. **Tier 1 — Macro-Intent Classifier ("The Mind")**:
-   - **Model**: 10-tree Random Forest Classifier (`PredictMacroIntent`) trained on `121,244` cleaned Counter-Strike combat snapshots (`98.33%` test accuracy, `0.9818` Macro-F1).
+1. **Tier 1 — Macro-Intent Classifier ("The Mind" — Per-Player Personalized Models)**:
+   - **Local Multi-Model Registry (Zero Network Transfer Overhead)**: Because clients and server run on the same machine, [`Data/train_and_transpile_chronos.py`](Data/train_and_transpile_chronos.py) compiles all player-specific 10-tree Random Forest classifiers directly into [`Both/ChronosModel.cs`](Both/ChronosModel.cs) (30 trees total, plus JSON artifacts in `Data/Models/`) and activates them dynamically via `ChronosModel.ActivatePlayerModel(playerId)`:
+     - **`P0_ActiveMoverShooter_RF10` (`playerId = 0`)**: Trained directly on your 3 live recorded sessions (`6,809` raw samples $\rightarrow$ `4,815` active moving & shooting frames, **`100.00%` Test Acc**, `1.0000` Macro-F1). Positions `~5.0m–6.8m` below the opponent (`Retreat`), weaves `X` (`±0.26m`) and `Y` in the firing pocket (`HoldAngle`) or advances along `+Y` (`AggressiveFlank`) to keep the `+Z` aiming laser aligned on target, and shoots continuously.
+     - **`P1_StationaryPeer_RF10` (`playerId = 1`)**: Trained on the preserved static second-window telemetry (`720` rows, **`100.00%` Test Acc**, `1.0000` Macro-F1). Remains stationary (`PassiveStationary = 3`, `mx = 0`, `my = 0`, `triggerShoot = 0`).
+     - **`Global_Baseline_RF10` (`playerId = -1`)**: Combined fallback model (**`94.83%` Test Acc**, `0.9239` Macro-F1).
    - **Input Features (5)**:
      - `Distance_To_Enemy` ($\sqrt{\Delta x^2 + \Delta y^2}$)
      - `Enemy_Visible` (`1` if distance $\le 18.0$, else `0`)
      - `Player_HP` (`0–100`)
      - `Player_Ammo` (`15.0`)
      - `In_Chokepoint` (`1` if $|x| < 2.5 \land |y| < 2.5$, else `0`)
-   - **Output Classes (3)**:
+   - **Output Classes (4)**:
      - `0 = MacroIntent.Retreat` (Disengage and fire defensively only at close range $< 8$)
-     - `1 = MacroIntent.HoldAngle` (Strafe perpendicular to threat vector and hold sightline $\le 20$)
-     - `2 = MacroIntent.AggressiveFlank` (Close distance along an angled flanking vector and engage $\le 16$)
+     - `1 = MacroIntent.HoldAngle` (Strafe/orbit perpendicular to threat vector and shoot $\le 20$)
+     - `2 = MacroIntent.AggressiveFlank` (Close distance along an angled flanking vector and shoot $\le 16$)
+     - `3 = MacroIntent.PassiveStationary` (Hold position with zero movement `mx = 0, my = 0` and `triggerShoot = 0`)
 
 2. **Tier 2 — Action Execution Engine ("The Body")**:
    - **Model**: Deterministic Vector Steering & Combat Regressor (`ExecuteAction`).

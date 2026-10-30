@@ -68,6 +68,13 @@ Implemented per [`Decentralized_Latency_Compensation_Framework_v3.pdf`](Decentra
    - Connected clients send lightweight `HeartbeatClientPacket` (packet type `3`) every `0.1s` (`10 Hz`), paused during Quantum Splinter dropouts or actual disconnects.
    - When the server detects no packets from a client for `30` ticks (`~0.5s`), it transitions that player to server-side Chronos AI control (`ChronosModel.SimulateSplinterTick`), directly advancing the disconnected player's `(x, y)` coordinates and executing AI shooting (`triggerShoot`, `aiShotCooldownTicks = 30`, `25` damage) in authoritative `PlayerData[]` snapshots broadcast to connected peers.
    - Upon receiving packets again (and passing the Chronos anti-cheat audit if reconnecting from a splinter), the server seamlessly hands live control back to the client.
+8. **Live Telemetry Recording, Pre-Processing & Per-Player Model Activation (Zero Network Overhead)**:
+   - Recorded **3 live user-played 2-minute sessions** (`546` + `1,931` + `4,332` = **`6,809` raw samples** in [`player_0_telemetry.csv`](Client_TopDownShooter/Assets/TelemetryLogs/player_0_telemetry.csv)), filtered `1,994` brief key-transition idle frames to retain **`4,815` active moving & shooting frames** for Player 0, and preserved the **`720` static peer samples** in [`player_1_telemetry.csv`](Client_TopDownShooter/Assets/TelemetryLogs/player_1_telemetry.csv) untouched (`17,535` total merged training rows).
+   - Trained and transpiled three local 10-tree Random Forest models (30 trees total in [`Both/ChronosModel.cs`](Both/ChronosModel.cs) and JSON artifacts in `Data/Models/`):
+     - **`P0_ActiveMoverShooter_RF10` (Player 0 Model)**: **`100.00%` Val & Test Acc** (`1.0000` Macro-F1) — reproduces your recorded gameplay by positioning `~5.0m–6.8m` below the opponent, weaving `X` (`±0.26m`) and `Y` to keep the `+Z` aiming laser aligned on target, and shooting continuously.
+     - **`P1_StationaryPeer_RF10` (Player 1 Model)**: **`100.00%` Val & Test Acc** (`1.0000` Macro-F1) — preserves the static second-window behavior (`PassiveStationary = 3`, `mx = 0`, `my = 0`, `triggerShoot = 0`).
+     - **`Global_Baseline_RF10` (Default Fallback Model)**: `95.31%` Val Acc, **`94.83%` Test Acc** (`0.9239` Macro-F1).
+   - Because all instances run on the same local machine, all player models reside locally in `ChronosModel` and are activated dynamically via `ChronosModel.ActivatePlayerModel(playerId)` with zero network model-transfer overhead.
 
 ---
 

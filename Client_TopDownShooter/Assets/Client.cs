@@ -123,7 +123,8 @@ public class Client : MonoBehaviour
             oppX = playerObjects[opponentId].transform.position.x;
             oppY = playerObjects[opponentId].transform.position.z;
         }
-        // Use authoritative snapshot coordinates at splinterStartServerTick for deterministic ledger generation
+        // Activate the opponent player's personalized local model (zero network transfer overhead)
+        ChronosModel.ActivatePlayerModel(opponentId);
         splinterLedgerBuffer = ChronosModel.GenerateDeterministicLedger(
             splinterStartServerTick,
             SplinterLedgerLength,
@@ -131,7 +132,8 @@ public class Client : MonoBehaviour
             latestOpponentSnapshot.y,
             oppHp,
             latestPlayerSnapshot.x,
-            latestPlayerSnapshot.y);
+            latestPlayerSnapshot.y,
+            playerId: opponentId);
 
         if (injectCheatDrift && splinterLedgerBuffer.Length > 10)
         {
@@ -142,7 +144,7 @@ public class Client : MonoBehaviour
             Debug.LogWarning("[Chronos Cheat Test] Injected +0.35f coordinate drift into client RAM ledger buffer at index 10!");
         }
 
-        Debug.Log($"[Chronos] Entered QUANTUM SPLINTER (parallel timeline) at serverTick={splinterStartServerTick} for {SplinterDuration:F1}s.");
+        Debug.Log($"[Chronos] Entered QUANTUM SPLINTER at serverTick={splinterStartServerTick} for {SplinterDuration:F1}s | Activated Model: {ChronosModel.GetModelProfileName(opponentId)} (player_{opponentId}).");
     }
 
     public void ToggleCheatInjection()
@@ -368,6 +370,7 @@ public class Client : MonoBehaviour
         if (isSplinterActive)
         {
             float remaining = Mathf.Max(0f, SplinterDuration - splinterElapsed);
+            int opponentId = clientID == 0 ? 1 : 0;
             MacroIntent currentIntent = MacroIntent.AggressiveFlank;
             if (splinterLedgerBuffer != null && lastAppliedSplinterTick >= 0 && lastAppliedSplinterTick < splinterLedgerBuffer.Length)
             {
@@ -376,7 +379,7 @@ public class Client : MonoBehaviour
 
             if (chronosAlertText != null)
             {
-                chronosAlertText.text = $"QUANTUM SPLINTER ACTIVE ({remaining:F1}s) | AI Brain: {currentIntent}";
+                chronosAlertText.text = $"QUANTUM SPLINTER ({remaining:F1}s) | Model: {ChronosModel.GetModelProfileName(opponentId)} | Intent: {currentIntent}";
                 chronosAlertText.color = new Color(0.2f, 0.95f, 1f, 1f);
             }
             if (chronosGlitchOverlay != null)
@@ -407,7 +410,7 @@ public class Client : MonoBehaviour
             if (chronosAlertText != null)
             {
                 chronosAlertText.text = connectedToServer
-                    ? "SYNC LINK STABLE | [L] 5s Splinter  [C] Toggle Cheat"
+                    ? $"SYNC LINK STABLE [My Model: {ChronosModel.GetModelProfileName(clientID)}] | [L] 5s Splinter  [C] Cheat"
                     : "";
                 chronosAlertText.color = new Color(0.85f, 0.9f, 0.95f, 0.85f);
             }
@@ -433,16 +436,29 @@ public class Client : MonoBehaviour
         float vx = enemyPos.x - myPos.x;
         float vy = enemyPos.z - myPos.z;
         float dist = Mathf.Sqrt(vx * vx + vy * vy);
+        if (dist < 0.20f)
+            return; // Skip unseparated spawn-overlap ticks
+
         int visible = dist <= 18f ? 1 : 0;
         float hp = latestPlayerSnapshot.health > 0 ? latestPlayerSnapshot.health : 100f;
         float ammo = 15f;
         int chokepoint = (Mathf.Abs(myPos.x) < 2.5f && Mathf.Abs(myPos.z) < 2.5f) ? 1 : 0;
-        int intent = (int)ChronosModel.PredictMacroIntent(dist, visible, hp, ammo, chokepoint);
+        int intent = (int)ChronosModel.InferBehaviorIntent(moveX, moveY, vx, vy, hp, ammo, chokepoint);
 
         try
         {
-            string line = $"{dist:F4},{visible},{hp:F1},{ammo:F1},{chokepoint},{intent},{vx:F4},{vy:F4},{moveX:F4},{moveY:F4},{shootTriggered}\n";
+            string line = $"{dist:F4},{visible},{hp:F1},{ammo:F1},{chokepoint},{intent},{vx:F4},{vy:F4},{moveX:F4},{moveY:F4},{shootTriggered},{clientID}\n";
             File.AppendAllText(telemetryFilePath, line);
+
+            string playerFile = Path.Combine(Path.GetDirectoryName(telemetryFilePath), $"player_{clientID}_telemetry.csv");
+            if (!File.Exists(playerFile))
+            {
+                File.WriteAllText(
+                    playerFile,
+                    "Player_ID,Distance_To_Enemy,Enemy_Visible,Player_HP,Player_Ammo,In_Chokepoint,Intent_Label,Vector_X_To_Enemy,Vector_Y_To_Enemy,Move_Input_X,Move_Input_Y,Trigger_Shoot\n");
+            }
+            string playerLine = $"{clientID},{dist:F4},{visible},{hp:F1},{ammo:F1},{chokepoint},{intent},{vx:F4},{vy:F4},{moveX:F4},{moveY:F4},{shootTriggered}\n";
+            File.AppendAllText(playerFile, playerLine);
         }
         catch
         {

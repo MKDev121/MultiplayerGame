@@ -1,0 +1,240 @@
+{
+  "player_id": 1,
+  "metrics": {
+    "model_name": "P1_StationaryPeer_RF10",
+    "n_estimators": 10,
+    "random_state": 44,
+    "train_samples": 5030,
+    "val_samples": 1080,
+    "test_samples": 1090,
+    "val_accuracy": 1.0,
+    "test_accuracy": 1.0,
+    "test_macro_f1": 1.0,
+    "confusion_matrix": [
+      [
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        100,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        990
+      ]
+    ]
+  },
+  "trees": [
+    {
+      "feature": "Distance_To_Enemy",
+      "threshold": 7.7356,
+      "left": {
+        "leaf": 3
+      },
+      "right": {
+        "feature": "Distance_To_Enemy",
+        "threshold": 8.56,
+        "left": {
+          "leaf": 3
+        },
+        "right": {
+          "leaf": 1
+        }
+      }
+    },
+    {
+      "feature": "Distance_To_Enemy",
+      "threshold": 7.7356,
+      "left": {
+        "leaf": 3
+      },
+      "right": {
+        "feature": "Distance_To_Enemy",
+        "threshold": 8.56,
+        "left": {
+          "leaf": 3
+        },
+        "right": {
+          "leaf": 1
+        }
+      }
+    },
+    {
+      "feature": "Distance_To_Enemy",
+      "threshold": 7.7356,
+      "left": {
+        "leaf": 3
+      },
+      "right": {
+        "feature": "Distance_To_Enemy",
+        "threshold": 8.56,
+        "left": {
+          "leaf": 3
+        },
+        "right": {
+          "leaf": 1
+        }
+      }
+    },
+    {
+      "feature": "Distance_To_Enemy",
+      "threshold": 7.7356,
+      "left": {
+        "leaf": 3
+      },
+      "right": {
+        "feature": "Player_HP",
+        "threshold": 62.5,
+        "left": {
+          "leaf": 3
+        },
+        "right": {
+          "feature": "Distance_To_Enemy",
+          "threshold": 8.531,
+          "left": {
+            "leaf": 3
+          },
+          "right": {
+            "leaf": 1
+          }
+        }
+      }
+    },
+    {
+      "feature": "Distance_To_Enemy",
+      "threshold": 7.7356,
+      "left": {
+        "leaf": 3
+      },
+      "right": {
+        "feature": "Distance_To_Enemy",
+        "threshold": 8.56,
+        "left": {
+          "leaf": 3
+        },
+        "right": {
+          "leaf": 1
+        }
+      }
+    },
+    {
+      "feature": "Distance_To_Enemy",
+      "threshold": 7.7356,
+      "left": {
+        "leaf": 3
+      },
+      "right": {
+        "feature": "Player_HP",
+        "threshold": 62.5,
+        "left": {
+          "leaf": 3
+        },
+        "right": {
+          "feature": "Distance_To_Enemy",
+          "threshold": 8.531,
+          "left": {
+            "leaf": 3
+          },
+          "right": {
+            "leaf": 1
+          }
+        }
+      }
+    },
+    {
+      "feature": "Distance_To_Enemy",
+      "threshold": 7.7356,
+      "left": {
+        "leaf": 3
+      },
+      "right": {
+        "feature": "Player_HP",
+        "threshold": 62.5,
+        "left": {
+          "leaf": 3
+        },
+        "right": {
+          "feature": "Distance_To_Enemy",
+          "threshold": 8.531,
+          "left": {
+            "leaf": 3
+          },
+          "right": {
+            "leaf": 1
+          }
+        }
+      }
+    },
+    {
+      "feature": "Distance_To_Enemy",
+      "threshold": 7.7356,
+      "left": {
+        "leaf": 3
+      },
+      "right": {
+        "feature": "Distance_To_Enemy",
+        "threshold": 8.56,
+        "left": {
+          "leaf": 3
+        },
+        "right": {
+          "leaf": 1
+        }
+      }
+    },
+    {
+      "feature": "Distance_To_Enemy",
+      "threshold": 7.7356,
+      "left": {
+        "leaf": 3
+      },
+      "right": {
+        "feature": "Distance_To_Enemy",
+        "threshold": 8.56,
+        "left": {
+          "leaf": 3
+        },
+        "right": {
+          "leaf": 1
+        }
+      }
+    },
+    {
+      "feature": "Player_HP",
+      "threshold": 62.5,
+      "left": {
+        "leaf": 3
+      },
+      "right": {
+        "feature": "Distance_To_Enemy",
+        "threshold": 8.3659,
+        "left": {
+          "leaf": 3
+        },
+        "right": {
+          "feature": "Distance_To_Enemy",
+          "threshold": 8.531,
+          "left": {
+            "leaf": 3
+          },
+          "right": {
+            "leaf": 1
+          }
+        }
+      }
+    }
+  ]
+}

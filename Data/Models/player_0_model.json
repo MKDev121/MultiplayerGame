@@ -1,0 +1,471 @@
+{
+  "player_id": 0,
+  "metrics": {
+    "model_name": "P0_ActiveMoverShooter_RF10",
+    "n_estimators": 10,
+    "random_state": 43,
+    "train_samples": 6740,
+    "val_samples": 1444,
+    "test_samples": 1446,
+    "val_accuracy": 1.0,
+    "test_accuracy": 1.0,
+    "test_macro_f1": 1.0,
+    "confusion_matrix": [
+      [
+        286,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        758,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        402,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0
+      ]
+    ]
+  },
+  "trees": [
+    {
+      "feature": "Distance_To_Enemy",
+      "threshold": 7.1652,
+      "left": {
+        "feature": "Distance_To_Enemy",
+        "threshold": 5.0957,
+        "left": {
+          "feature": "Distance_To_Enemy",
+          "threshold": 4.9917,
+          "left": {
+            "leaf": 0
+          },
+          "right": {
+            "feature": "Distance_To_Enemy",
+            "threshold": 5.0016,
+            "left": {
+              "leaf": 0
+            },
+            "right": {
+              "leaf": 1
+            }
+          }
+        },
+        "right": {
+          "leaf": 1
+        }
+      },
+      "right": {
+        "feature": "Distance_To_Enemy",
+        "threshold": 7.2868,
+        "left": {
+          "feature": "Distance_To_Enemy",
+          "threshold": 7.1997,
+          "left": {
+            "leaf": 1
+          },
+          "right": {
+            "leaf": 2
+          }
+        },
+        "right": {
+          "leaf": 2
+        }
+      }
+    },
+    {
+      "feature": "In_Chokepoint",
+      "threshold": 0.5,
+      "left": {
+        "feature": "Distance_To_Enemy",
+        "threshold": 7.1617,
+        "left": {
+          "leaf": 1
+        },
+        "right": {
+          "feature": "Distance_To_Enemy",
+          "threshold": 7.276,
+          "left": {
+            "feature": "Distance_To_Enemy",
+            "threshold": 7.1997,
+            "left": {
+              "leaf": 1
+            },
+            "right": {
+              "leaf": 2
+            }
+          },
+          "right": {
+            "leaf": 2
+          }
+        }
+      },
+      "right": {
+        "leaf": 0
+      }
+    },
+    {
+      "feature": "Distance_To_Enemy",
+      "threshold": 7.1617,
+      "left": {
+        "feature": "Distance_To_Enemy",
+        "threshold": 5.1029,
+        "left": {
+          "feature": "Distance_To_Enemy",
+          "threshold": 4.9588,
+          "left": {
+            "leaf": 0
+          },
+          "right": {
+            "feature": "Distance_To_Enemy",
+            "threshold": 4.9966,
+            "left": {
+              "leaf": 0
+            },
+            "right": {
+              "feature": "Distance_To_Enemy",
+              "threshold": 5.0016,
+              "left": {
+                "leaf": 0
+              },
+              "right": {
+                "leaf": 1
+              }
+            }
+          }
+        },
+        "right": {
+          "leaf": 1
+        }
+      },
+      "right": {
+        "feature": "Distance_To_Enemy",
+        "threshold": 7.2994,
+        "left": {
+          "feature": "Distance_To_Enemy",
+          "threshold": 7.1997,
+          "left": {
+            "leaf": 1
+          },
+          "right": {
+            "leaf": 2
+          }
+        },
+        "right": {
+          "leaf": 2
+        }
+      }
+    },
+    {
+      "feature": "Distance_To_Enemy",
+      "threshold": 7.1733,
+      "left": {
+        "feature": "Distance_To_Enemy",
+        "threshold": 5.1164,
+        "left": {
+          "feature": "In_Chokepoint",
+          "threshold": 0.5,
+          "left": {
+            "feature": "Distance_To_Enemy",
+            "threshold": 5.0016,
+            "left": {
+              "leaf": 0
+            },
+            "right": {
+              "leaf": 1
+            }
+          },
+          "right": {
+            "leaf": 0
+          }
+        },
+        "right": {
+          "leaf": 1
+        }
+      },
+      "right": {
+        "feature": "Distance_To_Enemy",
+        "threshold": 7.2886,
+        "left": {
+          "feature": "Distance_To_Enemy",
+          "threshold": 7.2004,
+          "left": {
+            "feature": "Distance_To_Enemy",
+            "threshold": 7.1997,
+            "left": {
+              "leaf": 1
+            },
+            "right": {
+              "leaf": 2
+            }
+          },
+          "right": {
+            "leaf": 2
+          }
+        },
+        "right": {
+          "leaf": 2
+        }
+      }
+    },
+    {
+      "feature": "Distance_To_Enemy",
+      "threshold": 7.15,
+      "left": {
+        "feature": "Distance_To_Enemy",
+        "threshold": 5.0766,
+        "left": {
+          "feature": "Distance_To_Enemy",
+          "threshold": 4.9261,
+          "left": {
+            "leaf": 0
+          },
+          "right": {
+            "feature": "Distance_To_Enemy",
+            "threshold": 5.0048,
+            "left": {
+              "feature": "Distance_To_Enemy",
+              "threshold": 5.0016,
+              "left": {
+                "leaf": 0
+              },
+              "right": {
+                "leaf": 1
+              }
+            },
+            "right": {
+              "leaf": 1
+            }
+          }
+        },
+        "right": {
+          "leaf": 1
+        }
+      },
+      "right": {
+        "leaf": 2
+      }
+    },
+    {
+      "feature": "Distance_To_Enemy",
+      "threshold": 7.1677,
+      "left": {
+        "feature": "In_Chokepoint",
+        "threshold": 0.5,
+        "left": {
+          "feature": "Distance_To_Enemy",
+          "threshold": 4.8236,
+          "left": {
+            "leaf": 0
+          },
+          "right": {
+            "feature": "Distance_To_Enemy",
+            "threshold": 5.0661,
+            "left": {
+              "leaf": 0
+            },
+            "right": {
+              "leaf": 1
+            }
+          }
+        },
+        "right": {
+          "leaf": 0
+        }
+      },
+      "right": {
+        "leaf": 2
+      }
+    },
+    {
+      "feature": "Distance_To_Enemy",
+      "threshold": 7.1502,
+      "left": {
+        "feature": "Distance_To_Enemy",
+        "threshold": 5.0749,
+        "left": {
+          "feature": "Distance_To_Enemy",
+          "threshold": 4.9379,
+          "left": {
+            "leaf": 0
+          },
+          "right": {
+            "leaf": 1
+          }
+        },
+        "right": {
+          "leaf": 1
+        }
+      },
+      "right": {
+        "feature": "Distance_To_Enemy",
+        "threshold": 7.259,
+        "left": {
+          "feature": "Distance_To_Enemy",
+          "threshold": 7.1966,
+          "left": {
+            "leaf": 1
+          },
+          "right": {
+            "feature": "Distance_To_Enemy",
+            "threshold": 7.1997,
+            "left": {
+              "leaf": 1
+            },
+            "right": {
+              "leaf": 2
+            }
+          }
+        },
+        "right": {
+          "leaf": 2
+        }
+      }
+    },
+    {
+      "feature": "In_Chokepoint",
+      "threshold": 0.5,
+      "left": {
+        "feature": "Distance_To_Enemy",
+        "threshold": 7.153,
+        "left": {
+          "feature": "Distance_To_Enemy",
+          "threshold": 4.8687,
+          "left": {
+            "leaf": 0
+          },
+          "right": {
+            "leaf": 1
+          }
+        },
+        "right": {
+          "leaf": 2
+        }
+      },
+      "right": {
+        "leaf": 0
+      }
+    },
+    {
+      "feature": "In_Chokepoint",
+      "threshold": 0.5,
+      "left": {
+        "feature": "Distance_To_Enemy",
+        "threshold": 7.17,
+        "left": {
+          "feature": "Distance_To_Enemy",
+          "threshold": 4.8371,
+          "left": {
+            "leaf": 0
+          },
+          "right": {
+            "feature": "Distance_To_Enemy",
+            "threshold": 5.0724,
+            "left": {
+              "feature": "Distance_To_Enemy",
+              "threshold": 5.0016,
+              "left": {
+                "leaf": 0
+              },
+              "right": {
+                "leaf": 1
+              }
+            },
+            "right": {
+              "leaf": 1
+            }
+          }
+        },
+        "right": {
+          "feature": "Distance_To_Enemy",
+          "threshold": 7.3003,
+          "left": {
+            "feature": "Distance_To_Enemy",
+            "threshold": 7.2006,
+            "left": {
+              "feature": "Distance_To_Enemy",
+              "threshold": 7.1997,
+              "left": {
+                "leaf": 1
+              },
+              "right": {
+                "leaf": 2
+              }
+            },
+            "right": {
+              "leaf": 2
+            }
+          },
+          "right": {
+            "leaf": 2
+          }
+        }
+      },
+      "right": {
+        "leaf": 0
+      }
+    },
+    {
+      "feature": "Distance_To_Enemy",
+      "threshold": 7.1595,
+      "left": {
+        "feature": "Distance_To_Enemy",
+        "threshold": 5.1029,
+        "left": {
+          "feature": "In_Chokepoint",
+          "threshold": 0.5,
+          "left": {
+            "feature": "Distance_To_Enemy",
+            "threshold": 5.0118,
+            "left": {
+              "feature": "Distance_To_Enemy",
+              "threshold": 4.9926,
+              "left": {
+                "leaf": 0
+              },
+              "right": {
+                "leaf": 0
+              }
+            },
+            "right": {
+              "leaf": 1
+            }
+          },
+          "right": {
+            "leaf": 0
+          }
+        },
+        "right": {
+          "leaf": 1
+        }
+      },
+      "right": {
+        "feature": "Distance_To_Enemy",
+        "threshold": 7.2823,
+        "left": {
+          "feature": "Distance_To_Enemy",
+          "threshold": 7.1997,
+          "left": {
+            "leaf": 1
+          },
+          "right": {
+            "leaf": 2
+          }
+        },
+        "right": {
+          "leaf": 2
+        }
+      }
+    }
+  ]
+}

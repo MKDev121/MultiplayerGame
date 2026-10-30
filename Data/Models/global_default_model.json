@@ -1,0 +1,1724 @@
+{
+  "player_id": -1,
+  "metrics": {
+    "model_name": "Global_Baseline_RF10",
+    "n_estimators": 10,
+    "random_state": 42,
+    "train_samples": 6674,
+    "val_samples": 1430,
+    "test_samples": 1431,
+    "val_accuracy": 0.9531,
+    "test_accuracy": 0.9483,
+    "test_macro_f1": 0.9239,
+    "confusion_matrix": [
+      [
+        227,
+        13,
+        13,
+        1
+      ],
+      [
+        3,
+        557,
+        2,
+        0
+      ],
+      [
+        4,
+        13,
+        490,
+        1
+      ],
+      [
+        19,
+        1,
+        4,
+        83
+      ]
+    ]
+  },
+  "trees": [
+    {
+      "feature": "Distance_To_Enemy",
+      "threshold": 7.3466,
+      "left": {
+        "feature": "Distance_To_Enemy",
+        "threshold": 5.224,
+        "left": {
+          "feature": "Player_HP",
+          "threshold": 77.585,
+          "left": {
+            "feature": "In_Chokepoint",
+            "threshold": 0.5,
+            "left": {
+              "feature": "Player_Ammo",
+              "threshold": 14.75,
+              "left": {
+                "leaf": 2
+              },
+              "right": {
+                "leaf": 3
+              }
+            },
+            "right": {
+              "feature": "Distance_To_Enemy",
+              "threshold": 1.5013,
+              "left": {
+                "leaf": 1
+              },
+              "right": {
+                "leaf": 1
+              }
+            }
+          },
+          "right": {
+            "feature": "Player_Ammo",
+            "threshold": 14.915,
+            "left": {
+              "feature": "In_Chokepoint",
+              "threshold": 0.5,
+              "left": {
+                "leaf": 2
+              },
+              "right": {
+                "leaf": 1
+              }
+            },
+            "right": {
+              "feature": "Distance_To_Enemy",
+              "threshold": 5.0497,
+              "left": {
+                "leaf": 0
+              },
+              "right": {
+                "leaf": 1
+              }
+            }
+          }
+        },
+        "right": {
+          "feature": "Distance_To_Enemy",
+          "threshold": 7.2292,
+          "left": {
+            "feature": "Player_Ammo",
+            "threshold": 14.685,
+            "left": {
+              "feature": "In_Chokepoint",
+              "threshold": 0.5,
+              "left": {
+                "leaf": 2
+              },
+              "right": {
+                "leaf": 1
+              }
+            },
+            "right": {
+              "feature": "Player_HP",
+              "threshold": 78.25,
+              "left": {
+                "leaf": 3
+              },
+              "right": {
+                "leaf": 1
+              }
+            }
+          },
+          "right": {
+            "feature": "In_Chokepoint",
+            "threshold": 0.5,
+            "left": {
+              "feature": "Player_Ammo",
+              "threshold": 4.415,
+              "left": {
+                "leaf": 0
+              },
+              "right": {
+                "leaf": 2
+              }
+            },
+            "right": {
+              "leaf": 1
+            }
+          }
+        }
+      },
+      "right": {
+        "feature": "Player_Ammo",
+        "threshold": 4.15,
+        "left": {
+          "feature": "Distance_To_Enemy",
+          "threshold": 16.4709,
+          "left": {
+            "feature": "Enemy_Visible",
+            "threshold": 0.5,
+            "left": {
+              "feature": "Player_Ammo",
+              "threshold": 3.15,
+              "left": {
+                "leaf": 0
+              },
+              "right": {
+                "leaf": 2
+              }
+            },
+            "right": {
+              "feature": "Player_Ammo",
+              "threshold": 3.25,
+              "left": {
+                "leaf": 0
+              },
+              "right": {
+                "leaf": 2
+              }
+            }
+          },
+          "right": {
+            "feature": "Player_Ammo",
+            "threshold": 3.2,
+            "left": {
+              "leaf": 0
+            },
+            "right": {
+              "leaf": 2
+            }
+          }
+        },
+        "right": {
+          "feature": "In_Chokepoint",
+          "threshold": 0.5,
+          "left": {
+            "feature": "Player_HP",
+            "threshold": 75.335,
+            "left": {
+              "feature": "Distance_To_Enemy",
+              "threshold": 8.4697,
+              "left": {
+                "leaf": 3
+              },
+              "right": {
+                "leaf": 1
+              }
+            },
+            "right": {
+              "feature": "Distance_To_Enemy",
+              "threshold": 10.3757,
+              "left": {
+                "leaf": 2
+              },
+              "right": {
+                "leaf": 2
+              }
+            }
+          },
+          "right": {
+            "leaf": 1
+          }
+        }
+      }
+    },
+    {
+      "feature": "Distance_To_Enemy",
+      "threshold": 7.3464,
+      "left": {
+        "feature": "Distance_To_Enemy",
+        "threshold": 4.864,
+        "left": {
+          "feature": "In_Chokepoint",
+          "threshold": 0.5,
+          "left": {
+            "feature": "Player_HP",
+            "threshold": 75.75,
+            "left": {
+              "feature": "Player_Ammo",
+              "threshold": 14.0,
+              "left": {
+                "leaf": 2
+              },
+              "right": {
+                "leaf": 3
+              }
+            },
+            "right": {
+              "feature": "Player_Ammo",
+              "threshold": 14.915,
+              "left": {
+                "leaf": 2
+              },
+              "right": {
+                "leaf": 0
+              }
+            }
+          },
+          "right": {
+            "feature": "Distance_To_Enemy",
+            "threshold": 1.0681,
+            "left": {
+              "leaf": 0
+            },
+            "right": {
+              "feature": "Player_Ammo",
+              "threshold": 3.15,
+              "left": {
+                "leaf": 0
+              },
+              "right": {
+                "leaf": 1
+              }
+            }
+          }
+        },
+        "right": {
+          "feature": "Distance_To_Enemy",
+          "threshold": 7.1789,
+          "left": {
+            "feature": "Player_Ammo",
+            "threshold": 13.95,
+            "left": {
+              "feature": "In_Chokepoint",
+              "threshold": 0.5,
+              "left": {
+                "leaf": 2
+              },
+              "right": {
+                "leaf": 1
+              }
+            },
+            "right": {
+              "feature": "Player_HP",
+              "threshold": 82.25,
+              "left": {
+                "leaf": 3
+              },
+              "right": {
+                "leaf": 1
+              }
+            }
+          },
+          "right": {
+            "feature": "Distance_To_Enemy",
+            "threshold": 7.2009,
+            "left": {
+              "feature": "Distance_To_Enemy",
+              "threshold": 7.198,
+              "left": {
+                "leaf": 1
+              },
+              "right": {
+                "leaf": 3
+              }
+            },
+            "right": {
+              "feature": "In_Chokepoint",
+              "threshold": 0.5,
+              "left": {
+                "leaf": 2
+              },
+              "right": {
+                "leaf": 1
+              }
+            }
+          }
+        }
+      },
+      "right": {
+        "feature": "In_Chokepoint",
+        "threshold": 0.5,
+        "left": {
+          "feature": "Player_Ammo",
+          "threshold": 3.95,
+          "left": {
+            "feature": "Player_Ammo",
+            "threshold": 3.2,
+            "left": {
+              "leaf": 0
+            },
+            "right": {
+              "leaf": 2
+            }
+          },
+          "right": {
+            "feature": "Distance_To_Enemy",
+            "threshold": 10.3505,
+            "left": {
+              "feature": "Player_HP",
+              "threshold": 75.5,
+              "left": {
+                "leaf": 1
+              },
+              "right": {
+                "leaf": 2
+              }
+            },
+            "right": {
+              "feature": "Distance_To_Enemy",
+              "threshold": 11.7698,
+              "left": {
+                "leaf": 1
+              },
+              "right": {
+                "leaf": 2
+              }
+            }
+          }
+        },
+        "right": {
+          "feature": "Player_Ammo",
+          "threshold": 3.75,
+          "left": {
+            "leaf": 0
+          },
+          "right": {
+            "leaf": 1
+          }
+        }
+      }
+    },
+    {
+      "feature": "Distance_To_Enemy",
+      "threshold": 7.3547,
+      "left": {
+        "feature": "Player_HP",
+        "threshold": 76.75,
+        "left": {
+          "feature": "In_Chokepoint",
+          "threshold": 0.5,
+          "left": {
+            "feature": "Player_Ammo",
+            "threshold": 14.875,
+            "left": {
+              "feature": "Player_HP",
+              "threshold": 63.125,
+              "left": {
+                "leaf": 0
+              },
+              "right": {
+                "leaf": 2
+              }
+            },
+            "right": {
+              "feature": "Player_Ammo",
+              "threshold": 15.415,
+              "left": {
+                "leaf": 3
+              },
+              "right": {
+                "leaf": 2
+              }
+            }
+          },
+          "right": {
+            "feature": "Player_Ammo",
+            "threshold": 3.75,
+            "left": {
+              "leaf": 0
+            },
+            "right": {
+              "feature": "Player_Ammo",
+              "threshold": 13.335,
+              "left": {
+                "leaf": 1
+              },
+              "right": {
+                "leaf": 0
+              }
+            }
+          }
+        },
+        "right": {
+          "feature": "Distance_To_Enemy",
+          "threshold": 5.1353,
+          "left": {
+            "feature": "In_Chokepoint",
+            "threshold": 0.5,
+            "left": {
+              "feature": "Player_Ammo",
+              "threshold": 14.915,
+              "left": {
+                "leaf": 2
+              },
+              "right": {
+                "leaf": 0
+              }
+            },
+            "right": {
+              "feature": "Distance_To_Enemy",
+              "threshold": 1.0008,
+              "left": {
+                "leaf": 0
+              },
+              "right": {
+                "leaf": 1
+              }
+            }
+          },
+          "right": {
+            "feature": "Distance_To_Enemy",
+            "threshold": 7.2171,
+            "left": {
+              "feature": "Player_Ammo",
+              "threshold": 14.275,
+              "left": {
+                "leaf": 2
+              },
+              "right": {
+                "leaf": 1
+              }
+            },
+            "right": {
+              "feature": "In_Chokepoint",
+              "threshold": 0.5,
+              "left": {
+                "leaf": 2
+              },
+              "right": {
+                "leaf": 1
+              }
+            }
+          }
+        }
+      },
+      "right": {
+        "feature": "In_Chokepoint",
+        "threshold": 0.5,
+        "left": {
+          "feature": "Player_Ammo",
+          "threshold": 4.135,
+          "left": {
+            "feature": "Player_Ammo",
+            "threshold": 3.2,
+            "left": {
+              "leaf": 0
+            },
+            "right": {
+              "leaf": 2
+            }
+          },
+          "right": {
+            "feature": "Player_HP",
+            "threshold": 75.335,
+            "left": {
+              "feature": "Distance_To_Enemy",
+              "threshold": 8.531,
+              "left": {
+                "leaf": 3
+              },
+              "right": {
+                "leaf": 1
+              }
+            },
+            "right": {
+              "feature": "Enemy_Visible",
+              "threshold": 0.5,
+              "left": {
+                "leaf": 2
+              },
+              "right": {
+                "leaf": 2
+              }
+            }
+          }
+        },
+        "right": {
+          "feature": "Player_Ammo",
+          "threshold": 3.75,
+          "left": {
+            "leaf": 0
+          },
+          "right": {
+            "leaf": 1
+          }
+        }
+      }
+    },
+    {
+      "feature": "In_Chokepoint",
+      "threshold": 0.5,
+      "left": {
+        "feature": "Distance_To_Enemy",
+        "threshold": 7.1961,
+        "left": {
+          "feature": "Distance_To_Enemy",
+          "threshold": 5.1483,
+          "left": {
+            "feature": "Distance_To_Enemy",
+            "threshold": 4.2793,
+            "left": {
+              "feature": "Player_HP",
+              "threshold": 76.0,
+              "left": {
+                "leaf": 3
+              },
+              "right": {
+                "leaf": 0
+              }
+            },
+            "right": {
+              "feature": "Distance_To_Enemy",
+              "threshold": 5.0368,
+              "left": {
+                "leaf": 0
+              },
+              "right": {
+                "leaf": 1
+              }
+            }
+          },
+          "right": {
+            "feature": "Player_Ammo",
+            "threshold": 14.71,
+            "left": {
+              "feature": "Player_Ammo",
+              "threshold": 3.635,
+              "left": {
+                "leaf": 0
+              },
+              "right": {
+                "leaf": 2
+              }
+            },
+            "right": {
+              "feature": "Player_HP",
+              "threshold": 99.335,
+              "left": {
+                "leaf": 3
+              },
+              "right": {
+                "leaf": 1
+              }
+            }
+          }
+        },
+        "right": {
+          "feature": "Distance_To_Enemy",
+          "threshold": 10.312,
+          "left": {
+            "feature": "Player_HP",
+            "threshold": 76.335,
+            "left": {
+              "feature": "Distance_To_Enemy",
+              "threshold": 8.452,
+              "left": {
+                "leaf": 3
+              },
+              "right": {
+                "leaf": 1
+              }
+            },
+            "right": {
+              "feature": "Player_Ammo",
+              "threshold": 4.035,
+              "left": {
+                "leaf": 0
+              },
+              "right": {
+                "leaf": 2
+              }
+            }
+          },
+          "right": {
+            "feature": "Enemy_Visible",
+            "threshold": 0.5,
+            "left": {
+              "feature": "Player_Ammo",
+              "threshold": 3.75,
+              "left": {
+                "leaf": 0
+              },
+              "right": {
+                "leaf": 2
+              }
+            },
+            "right": {
+              "feature": "Distance_To_Enemy",
+              "threshold": 10.5092,
+              "left": {
+                "leaf": 2
+              },
+              "right": {
+                "leaf": 1
+              }
+            }
+          }
+        }
+      },
+      "right": {
+        "feature": "Player_Ammo",
+        "threshold": 4.875,
+        "left": {
+          "feature": "Player_Ammo",
+          "threshold": 3.25,
+          "left": {
+            "leaf": 0
+          },
+          "right": {
+            "leaf": 1
+          }
+        },
+        "right": {
+          "feature": "Player_HP",
+          "threshold": 68.25,
+          "left": {
+            "feature": "Player_HP",
+            "threshold": 37.5,
+            "left": {
+              "leaf": 0
+            },
+            "right": {
+              "feature": "Player_Ammo",
+              "threshold": 16.665,
+              "left": {
+                "leaf": 1
+              },
+              "right": {
+                "leaf": 0
+              }
+            }
+          },
+          "right": {
+            "feature": "Distance_To_Enemy",
+            "threshold": 2.8636,
+            "left": {
+              "feature": "Distance_To_Enemy",
+              "threshold": 1.4684,
+              "left": {
+                "leaf": 0
+              },
+              "right": {
+                "leaf": 1
+              }
+            },
+            "right": {
+              "leaf": 1
+            }
+          }
+        }
+      }
+    },
+    {
+      "feature": "Distance_To_Enemy",
+      "threshold": 7.3497,
+      "left": {
+        "feature": "Distance_To_Enemy",
+        "threshold": 4.878,
+        "left": {
+          "feature": "In_Chokepoint",
+          "threshold": 0.5,
+          "left": {
+            "feature": "Player_HP",
+            "threshold": 75.75,
+            "left": {
+              "feature": "Distance_To_Enemy",
+              "threshold": 3.9016,
+              "left": {
+                "leaf": 3
+              },
+              "right": {
+                "leaf": 3
+              }
+            },
+            "right": {
+              "feature": "Player_Ammo",
+              "threshold": 14.58,
+              "left": {
+                "leaf": 2
+              },
+              "right": {
+                "leaf": 0
+              }
+            }
+          },
+          "right": {
+            "feature": "Player_Ammo",
+            "threshold": 4.335,
+            "left": {
+              "feature": "Player_Ammo",
+              "threshold": 3.15,
+              "left": {
+                "leaf": 0
+              },
+              "right": {
+                "leaf": 1
+              }
+            },
+            "right": {
+              "feature": "Player_Ammo",
+              "threshold": 14.875,
+              "left": {
+                "leaf": 1
+              },
+              "right": {
+                "leaf": 1
+              }
+            }
+          }
+        },
+        "right": {
+          "feature": "Distance_To_Enemy",
+          "threshold": 7.1892,
+          "left": {
+            "feature": "Player_Ammo",
+            "threshold": 14.725,
+            "left": {
+              "feature": "In_Chokepoint",
+              "threshold": 0.5,
+              "left": {
+                "leaf": 2
+              },
+              "right": {
+                "leaf": 1
+              }
+            },
+            "right": {
+              "feature": "Distance_To_Enemy",
+              "threshold": 5.1602,
+              "left": {
+                "leaf": 1
+              },
+              "right": {
+                "leaf": 1
+              }
+            }
+          },
+          "right": {
+            "feature": "In_Chokepoint",
+            "threshold": 0.5,
+            "left": {
+              "feature": "Distance_To_Enemy",
+              "threshold": 7.2014,
+              "left": {
+                "leaf": 1
+              },
+              "right": {
+                "leaf": 2
+              }
+            },
+            "right": {
+              "leaf": 1
+            }
+          }
+        }
+      },
+      "right": {
+        "feature": "In_Chokepoint",
+        "threshold": 0.5,
+        "left": {
+          "feature": "Distance_To_Enemy",
+          "threshold": 9.6475,
+          "left": {
+            "feature": "Player_HP",
+            "threshold": 75.5,
+            "left": {
+              "feature": "Player_HP",
+              "threshold": 73.1,
+              "left": {
+                "leaf": 2
+              },
+              "right": {
+                "leaf": 1
+              }
+            },
+            "right": {
+              "feature": "Distance_To_Enemy",
+              "threshold": 8.8663,
+              "left": {
+                "leaf": 2
+              },
+              "right": {
+                "leaf": 2
+              }
+            }
+          },
+          "right": {
+            "feature": "Player_Ammo",
+            "threshold": 3.85,
+            "left": {
+              "feature": "Player_Ammo",
+              "threshold": 3.15,
+              "left": {
+                "leaf": 0
+              },
+              "right": {
+                "leaf": 2
+              }
+            },
+            "right": {
+              "feature": "Distance_To_Enemy",
+              "threshold": 12.2728,
+              "left": {
+                "leaf": 1
+              },
+              "right": {
+                "leaf": 2
+              }
+            }
+          }
+        },
+        "right": {
+          "feature": "Player_Ammo",
+          "threshold": 2.975,
+          "left": {
+            "leaf": 0
+          },
+          "right": {
+            "feature": "Player_Ammo",
+            "threshold": 3.75,
+            "left": {
+              "leaf": 0
+            },
+            "right": {
+              "leaf": 1
+            }
+          }
+        }
+      }
+    },
+    {
+      "feature": "Distance_To_Enemy",
+      "threshold": 7.3577,
+      "left": {
+        "feature": "Player_HP",
+        "threshold": 75.125,
+        "left": {
+          "feature": "Distance_To_Enemy",
+          "threshold": 3.8706,
+          "left": {
+            "feature": "In_Chokepoint",
+            "threshold": 0.5,
+            "left": {
+              "feature": "Player_Ammo",
+              "threshold": 12.06,
+              "left": {
+                "leaf": 2
+              },
+              "right": {
+                "leaf": 0
+              }
+            },
+            "right": {
+              "feature": "Player_Ammo",
+              "threshold": 19.125,
+              "left": {
+                "leaf": 1
+              },
+              "right": {
+                "leaf": 0
+              }
+            }
+          },
+          "right": {
+            "feature": "In_Chokepoint",
+            "threshold": 0.5,
+            "left": {
+              "feature": "Player_Ammo",
+              "threshold": 14.75,
+              "left": {
+                "leaf": 2
+              },
+              "right": {
+                "leaf": 3
+              }
+            },
+            "right": {
+              "feature": "Player_Ammo",
+              "threshold": 23.25,
+              "left": {
+                "leaf": 1
+              },
+              "right": {
+                "leaf": 0
+              }
+            }
+          }
+        },
+        "right": {
+          "feature": "Distance_To_Enemy",
+          "threshold": 5.1724,
+          "left": {
+            "feature": "In_Chokepoint",
+            "threshold": 0.5,
+            "left": {
+              "feature": "Distance_To_Enemy",
+              "threshold": 5.0354,
+              "left": {
+                "leaf": 0
+              },
+              "right": {
+                "leaf": 1
+              }
+            },
+            "right": {
+              "feature": "Distance_To_Enemy",
+              "threshold": 1.0681,
+              "left": {
+                "leaf": 0
+              },
+              "right": {
+                "leaf": 1
+              }
+            }
+          },
+          "right": {
+            "feature": "Distance_To_Enemy",
+            "threshold": 7.2331,
+            "left": {
+              "feature": "Player_Ammo",
+              "threshold": 14.825,
+              "left": {
+                "leaf": 2
+              },
+              "right": {
+                "leaf": 1
+              }
+            },
+            "right": {
+              "feature": "In_Chokepoint",
+              "threshold": 0.5,
+              "left": {
+                "leaf": 2
+              },
+              "right": {
+                "leaf": 1
+              }
+            }
+          }
+        }
+      },
+      "right": {
+        "feature": "In_Chokepoint",
+        "threshold": 0.5,
+        "left": {
+          "feature": "Player_Ammo",
+          "threshold": 4.085,
+          "left": {
+            "feature": "Player_Ammo",
+            "threshold": 3.2,
+            "left": {
+              "leaf": 0
+            },
+            "right": {
+              "leaf": 2
+            }
+          },
+          "right": {
+            "feature": "Distance_To_Enemy",
+            "threshold": 10.3986,
+            "left": {
+              "feature": "Player_HP",
+              "threshold": 77.5,
+              "left": {
+                "leaf": 1
+              },
+              "right": {
+                "leaf": 2
+              }
+            },
+            "right": {
+              "feature": "Enemy_Visible",
+              "threshold": 0.5,
+              "left": {
+                "leaf": 2
+              },
+              "right": {
+                "leaf": 1
+              }
+            }
+          }
+        },
+        "right": {
+          "feature": "Player_Ammo",
+          "threshold": 2.975,
+          "left": {
+            "leaf": 0
+          },
+          "right": {
+            "feature": "Player_Ammo",
+            "threshold": 3.6,
+            "left": {
+              "leaf": 0
+            },
+            "right": {
+              "leaf": 1
+            }
+          }
+        }
+      }
+    },
+    {
+      "feature": "Distance_To_Enemy",
+      "threshold": 6.9695,
+      "left": {
+        "feature": "Distance_To_Enemy",
+        "threshold": 4.8927,
+        "left": {
+          "feature": "In_Chokepoint",
+          "threshold": 0.5,
+          "left": {
+            "feature": "Player_HP",
+            "threshold": 75.75,
+            "left": {
+              "feature": "Player_Ammo",
+              "threshold": 14.75,
+              "left": {
+                "leaf": 2
+              },
+              "right": {
+                "leaf": 3
+              }
+            },
+            "right": {
+              "feature": "Player_Ammo",
+              "threshold": 14.915,
+              "left": {
+                "leaf": 2
+              },
+              "right": {
+                "leaf": 0
+              }
+            }
+          },
+          "right": {
+            "feature": "Player_Ammo",
+            "threshold": 4.395,
+            "left": {
+              "feature": "Player_Ammo",
+              "threshold": 3.15,
+              "left": {
+                "leaf": 0
+              },
+              "right": {
+                "leaf": 1
+              }
+            },
+            "right": {
+              "feature": "Distance_To_Enemy",
+              "threshold": 1.0663,
+              "left": {
+                "leaf": 0
+              },
+              "right": {
+                "leaf": 1
+              }
+            }
+          }
+        },
+        "right": {
+          "feature": "Player_Ammo",
+          "threshold": 14.55,
+          "left": {
+            "feature": "In_Chokepoint",
+            "threshold": 0.5,
+            "left": {
+              "feature": "Player_Ammo",
+              "threshold": 3.45,
+              "left": {
+                "leaf": 0
+              },
+              "right": {
+                "leaf": 2
+              }
+            },
+            "right": {
+              "feature": "Player_Ammo",
+              "threshold": 2.7,
+              "left": {
+                "leaf": 0
+              },
+              "right": {
+                "leaf": 1
+              }
+            }
+          },
+          "right": {
+            "feature": "Distance_To_Enemy",
+            "threshold": 5.1399,
+            "left": {
+              "feature": "Player_HP",
+              "threshold": 87.5,
+              "left": {
+                "leaf": 3
+              },
+              "right": {
+                "leaf": 1
+              }
+            },
+            "right": {
+              "feature": "Player_HP",
+              "threshold": 81.25,
+              "left": {
+                "leaf": 3
+              },
+              "right": {
+                "leaf": 1
+              }
+            }
+          }
+        }
+      },
+      "right": {
+        "feature": "In_Chokepoint",
+        "threshold": 0.5,
+        "left": {
+          "feature": "Distance_To_Enemy",
+          "threshold": 7.1605,
+          "left": {
+            "feature": "Player_Ammo",
+            "threshold": 13.875,
+            "left": {
+              "feature": "Distance_To_Enemy",
+              "threshold": 6.9976,
+              "left": {
+                "leaf": 0
+              },
+              "right": {
+                "leaf": 2
+              }
+            },
+            "right": {
+              "feature": "Player_HP",
+              "threshold": 96.8,
+              "left": {
+                "leaf": 2
+              },
+              "right": {
+                "leaf": 1
+              }
+            }
+          },
+          "right": {
+            "feature": "Player_Ammo",
+            "threshold": 4.35,
+            "left": {
+              "feature": "Player_Ammo",
+              "threshold": 3.15,
+              "left": {
+                "leaf": 0
+              },
+              "right": {
+                "leaf": 2
+              }
+            },
+            "right": {
+              "feature": "Player_HP",
+              "threshold": 76.5,
+              "left": {
+                "leaf": 3
+              },
+              "right": {
+                "leaf": 2
+              }
+            }
+          }
+        },
+        "right": {
+          "feature": "Player_Ammo",
+          "threshold": 3.75,
+          "left": {
+            "leaf": 0
+          },
+          "right": {
+            "leaf": 1
+          }
+        }
+      }
+    },
+    {
+      "feature": "Distance_To_Enemy",
+      "threshold": 7.3464,
+      "left": {
+        "feature": "Distance_To_Enemy",
+        "threshold": 5.2089,
+        "left": {
+          "feature": "Player_HP",
+          "threshold": 75.875,
+          "left": {
+            "feature": "In_Chokepoint",
+            "threshold": 0.5,
+            "left": {
+              "feature": "Player_Ammo",
+              "threshold": 14.0,
+              "left": {
+                "leaf": 0
+              },
+              "right": {
+                "leaf": 3
+              }
+            },
+            "right": {
+              "feature": "Player_HP",
+              "threshold": 68.95,
+              "left": {
+                "leaf": 0
+              },
+              "right": {
+                "leaf": 1
+              }
+            }
+          },
+          "right": {
+            "feature": "Player_Ammo",
+            "threshold": 14.79,
+            "left": {
+              "feature": "Player_Ammo",
+              "threshold": 4.05,
+              "left": {
+                "leaf": 0
+              },
+              "right": {
+                "leaf": 1
+              }
+            },
+            "right": {
+              "feature": "Player_Ammo",
+              "threshold": 15.125,
+              "left": {
+                "leaf": 0
+              },
+              "right": {
+                "leaf": 1
+              }
+            }
+          }
+        },
+        "right": {
+          "feature": "Player_Ammo",
+          "threshold": 13.56,
+          "left": {
+            "feature": "In_Chokepoint",
+            "threshold": 0.5,
+            "left": {
+              "feature": "Player_Ammo",
+              "threshold": 3.15,
+              "left": {
+                "leaf": 0
+              },
+              "right": {
+                "leaf": 2
+              }
+            },
+            "right": {
+              "leaf": 1
+            }
+          },
+          "right": {
+            "feature": "Distance_To_Enemy",
+            "threshold": 7.1846,
+            "left": {
+              "feature": "Player_HP",
+              "threshold": 78.585,
+              "left": {
+                "leaf": 3
+              },
+              "right": {
+                "leaf": 1
+              }
+            },
+            "right": {
+              "feature": "In_Chokepoint",
+              "threshold": 0.5,
+              "left": {
+                "leaf": 2
+              },
+              "right": {
+                "leaf": 1
+              }
+            }
+          }
+        }
+      },
+      "right": {
+        "feature": "In_Chokepoint",
+        "threshold": 0.5,
+        "left": {
+          "feature": "Player_Ammo",
+          "threshold": 4.135,
+          "left": {
+            "feature": "Distance_To_Enemy",
+            "threshold": 16.4066,
+            "left": {
+              "feature": "Player_Ammo",
+              "threshold": 3.15,
+              "left": {
+                "leaf": 0
+              },
+              "right": {
+                "leaf": 2
+              }
+            },
+            "right": {
+              "feature": "Distance_To_Enemy",
+              "threshold": 16.5327,
+              "left": {
+                "leaf": 0
+              },
+              "right": {
+                "leaf": 2
+              }
+            }
+          },
+          "right": {
+            "feature": "Distance_To_Enemy",
+            "threshold": 10.2784,
+            "left": {
+              "feature": "Player_HP",
+              "threshold": 77.5,
+              "left": {
+                "leaf": 1
+              },
+              "right": {
+                "leaf": 2
+              }
+            },
+            "right": {
+              "feature": "Enemy_Visible",
+              "threshold": 0.5,
+              "left": {
+                "leaf": 2
+              },
+              "right": {
+                "leaf": 1
+              }
+            }
+          }
+        },
+        "right": {
+          "feature": "Player_Ammo",
+          "threshold": 3.6,
+          "left": {
+            "leaf": 0
+          },
+          "right": {
+            "leaf": 1
+          }
+        }
+      }
+    },
+    {
+      "feature": "Distance_To_Enemy",
+      "threshold": 7.346,
+      "left": {
+        "feature": "Distance_To_Enemy",
+        "threshold": 5.1928,
+        "left": {
+          "feature": "Player_HP",
+          "threshold": 75.875,
+          "left": {
+            "feature": "In_Chokepoint",
+            "threshold": 0.5,
+            "left": {
+              "feature": "Player_Ammo",
+              "threshold": 14.75,
+              "left": {
+                "leaf": 2
+              },
+              "right": {
+                "leaf": 3
+              }
+            },
+            "right": {
+              "feature": "Player_Ammo",
+              "threshold": 16.665,
+              "left": {
+                "leaf": 1
+              },
+              "right": {
+                "leaf": 0
+              }
+            }
+          },
+          "right": {
+            "feature": "In_Chokepoint",
+            "threshold": 0.5,
+            "left": {
+              "feature": "Distance_To_Enemy",
+              "threshold": 4.9012,
+              "left": {
+                "leaf": 0
+              },
+              "right": {
+                "leaf": 1
+              }
+            },
+            "right": {
+              "feature": "Distance_To_Enemy",
+              "threshold": 1.4333,
+              "left": {
+                "leaf": 0
+              },
+              "right": {
+                "leaf": 1
+              }
+            }
+          }
+        },
+        "right": {
+          "feature": "Distance_To_Enemy",
+          "threshold": 7.2176,
+          "left": {
+            "feature": "Player_Ammo",
+            "threshold": 14.55,
+            "left": {
+              "feature": "In_Chokepoint",
+              "threshold": 0.5,
+              "left": {
+                "leaf": 2
+              },
+              "right": {
+                "leaf": 1
+              }
+            },
+            "right": {
+              "feature": "Player_Ammo",
+              "threshold": 14.85,
+              "left": {
+                "leaf": 2
+              },
+              "right": {
+                "leaf": 1
+              }
+            }
+          },
+          "right": {
+            "feature": "In_Chokepoint",
+            "threshold": 0.5,
+            "left": {
+              "feature": "Player_Ammo",
+              "threshold": 3.3,
+              "left": {
+                "leaf": 0
+              },
+              "right": {
+                "leaf": 2
+              }
+            },
+            "right": {
+              "leaf": 1
+            }
+          }
+        }
+      },
+      "right": {
+        "feature": "In_Chokepoint",
+        "threshold": 0.5,
+        "left": {
+          "feature": "Player_Ammo",
+          "threshold": 3.95,
+          "left": {
+            "feature": "Player_Ammo",
+            "threshold": 3.2,
+            "left": {
+              "leaf": 0
+            },
+            "right": {
+              "leaf": 2
+            }
+          },
+          "right": {
+            "feature": "Distance_To_Enemy",
+            "threshold": 10.3135,
+            "left": {
+              "feature": "Player_HP",
+              "threshold": 75.835,
+              "left": {
+                "leaf": 3
+              },
+              "right": {
+                "leaf": 2
+              }
+            },
+            "right": {
+              "feature": "Enemy_Visible",
+              "threshold": 0.5,
+              "left": {
+                "leaf": 2
+              },
+              "right": {
+                "leaf": 1
+              }
+            }
+          }
+        },
+        "right": {
+          "feature": "Player_HP",
+          "threshold": 96.3,
+          "left": {
+            "feature": "Player_Ammo",
+            "threshold": 2.975,
+            "left": {
+              "leaf": 0
+            },
+            "right": {
+              "feature": "Player_Ammo",
+              "threshold": 3.935,
+              "left": {
+                "leaf": 0
+              },
+              "right": {
+                "leaf": 1
+              }
+            }
+          },
+          "right": {
+            "leaf": 1
+          }
+        }
+      }
+    },
+    {
+      "feature": "In_Chokepoint",
+      "threshold": 0.5,
+      "left": {
+        "feature": "Distance_To_Enemy",
+        "threshold": 7.1813,
+        "left": {
+          "feature": "Distance_To_Enemy",
+          "threshold": 4.8436,
+          "left": {
+            "feature": "Player_HP",
+            "threshold": 75.75,
+            "left": {
+              "feature": "Player_Ammo",
+              "threshold": 14.75,
+              "left": {
+                "leaf": 2
+              },
+              "right": {
+                "leaf": 3
+              }
+            },
+            "right": {
+              "feature": "Player_Ammo",
+              "threshold": 14.29,
+              "left": {
+                "leaf": 2
+              },
+              "right": {
+                "leaf": 0
+              }
+            }
+          },
+          "right": {
+            "feature": "Player_Ammo",
+            "threshold": 14.95,
+            "left": {
+              "feature": "Player_Ammo",
+              "threshold": 3.635,
+              "left": {
+                "leaf": 0
+              },
+              "right": {
+                "leaf": 2
+              }
+            },
+            "right": {
+              "feature": "Player_HP",
+              "threshold": 99.335,
+              "left": {
+                "leaf": 3
+              },
+              "right": {
+                "leaf": 1
+              }
+            }
+          }
+        },
+        "right": {
+          "feature": "Player_Ammo",
+          "threshold": 4.05,
+          "left": {
+            "feature": "Player_Ammo",
+            "threshold": 3.2,
+            "left": {
+              "leaf": 0
+            },
+            "right": {
+              "leaf": 2
+            }
+          },
+          "right": {
+            "feature": "Player_HP",
+            "threshold": 76.5,
+            "left": {
+              "feature": "Player_Ammo",
+              "threshold": 13.19,
+              "left": {
+                "leaf": 2
+              },
+              "right": {
+                "leaf": 1
+              }
+            },
+            "right": {
+              "feature": "Distance_To_Enemy",
+              "threshold": 9.8895,
+              "left": {
+                "leaf": 2
+              },
+              "right": {
+                "leaf": 2
+              }
+            }
+          }
+        }
+      },
+      "right": {
+        "feature": "Player_Ammo",
+        "threshold": 4.65,
+        "left": {
+          "feature": "Player_Ammo",
+          "threshold": 3.25,
+          "left": {
+            "leaf": 0
+          },
+          "right": {
+            "feature": "Distance_To_Enemy",
+            "threshold": 2.2631,
+            "left": {
+              "leaf": 0
+            },
+            "right": {
+              "leaf": 1
+            }
+          }
+        },
+        "right": {
+          "feature": "Player_HP",
+          "threshold": 40.75,
+          "left": {
+            "feature": "Player_HP",
+            "threshold": 38.0,
+            "left": {
+              "leaf": 0
+            },
+            "right": {
+              "leaf": 1
+            }
+          },
+          "right": {
+            "feature": "Distance_To_Enemy",
+            "threshold": 2.9669,
+            "left": {
+              "feature": "Player_Ammo",
+              "threshold": 14.71,
+              "left": {
+                "leaf": 1
+              },
+              "right": {
+                "leaf": 1
+              }
+            },
+            "right": {
+              "feature": "Player_HP",
+              "threshold": 68.75,
+              "left": {
+                "leaf": 1
+              },
+              "right": {
+                "leaf": 1
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

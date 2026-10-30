@@ -161,6 +161,34 @@ internal class Program
         await Game();
         async Task Game()
         {
+            bool isRecordSession = args.Contains("--record-session");
+            bool resetP0 = args.Contains("--reset-p0");
+            const int maxRecordTicks = 60 * 120; // 2 minutes (120s) at 60 Hz
+            const int recordCloseTimeoutTicks = 60 * 15; // 15 seconds of no packets after playing = user closed app
+            bool hasHumanPlayedYet = false;
+            bool clientSocketClosed = false;
+            int activeHumanPlayerId = 0;
+            int recordedSamplesThisSession = 0;
+
+            string repoRoot = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", ".."));
+            if (!Directory.Exists(Path.Combine(repoRoot, "Client_TopDownShooter")))
+                repoRoot = Directory.GetCurrentDirectory();
+            string telemetryDir = Path.Combine(repoRoot, "Client_TopDownShooter", "Assets", "TelemetryLogs");
+            Directory.CreateDirectory(telemetryDir);
+            string p0CsvPath = Path.Combine(telemetryDir, "player_0_telemetry.csv");
+            string liveCsvPath = Path.Combine(telemetryDir, "live_telemetry.csv");
+
+            if (isRecordSession)
+            {
+                if (resetP0 || !File.Exists(p0CsvPath))
+                {
+                    File.WriteAllText(
+                        p0CsvPath,
+                        "Player_ID,Distance_To_Enemy,Enemy_Visible,Player_HP,Player_Ammo,In_Chokepoint,Intent_Label,Vector_X_To_Enemy,Vector_Y_To_Enemy,Move_Input_X,Move_Input_Y,Trigger_Shoot\n");
+                }
+                Console.WriteLine($"[Chronos Recorder] LIVE RECORDING SESSION STARTED (Max 2 mins, or close client to finish early). Saving to: {p0CsvPath}");
+            }
+
             const float maxShootRange = 20f;
             const float maxHitDistanceFromRay = 0.75f;
             const int shotDamage = 25;
@@ -175,6 +203,9 @@ internal class Program
             var lastShotTick = new Dictionary<int, int>();
             var lastSeenTick = new Dictionary<int, int>();
             var isDisconnected = new Dictionary<int, bool>();
+            var tickMoveX = new Dictionary<int, float>();
+            var tickMoveY = new Dictionary<int, float>();
+            var tickShotFired = new Dictionary<int, int>();
             var bannedClients = new HashSet<IPEndPoint>();
             for (int playerId = 0; playerId < clientsConnected; playerId++)
             {
@@ -183,6 +214,9 @@ internal class Program
                 lastShotTick[playerId] = -shotCooldownTicks;
                 lastSeenTick[playerId] = 0;
                 isDisconnected[playerId] = false;
+                tickMoveX[playerId] = 0f;
+                tickMoveY[playerId] = 0f;
+                tickShotFired[playerId] = 0;
             }
 
             Task listeningTask = Task.Run(async () =>
@@ -197,6 +231,8 @@ internal class Program
                     catch (SocketException exception)
                     {
                         Console.WriteLine($"[Network] Receive socket warning (client may have disconnected): {exception.Message}");
+                        if (hasHumanPlayedYet)
+                            clientSocketClosed = true;
                         continue;
                     }
                     catch (ObjectDisposedException)
@@ -227,6 +263,9 @@ internal class Program
 
                     int playerId = clients[client];
                     PlayerData player = players[playerId];
+                    tickMoveX[playerId] = 0f;
+                    tickMoveY[playerId] = 0f;
+                    tickShotFired[playerId] = 0;
 
                     while (playerDataBuffers[playerId].TryDequeue(out object? data))
                     {
@@ -245,6 +284,14 @@ internal class Program
                             float horizontal = Math.Clamp(mov.deltaX, -maxInputMagnitude, maxInputMagnitude);
                             float vertical = Math.Clamp(mov.deltaY, -maxInputMagnitude, maxInputMagnitude);
 
+                            if (MathF.Abs(horizontal) > 0.01f || MathF.Abs(vertical) > 0.01f)
+                            {
+                                hasHumanPlayedYet = true;
+                                activeHumanPlayerId = playerId;
+                                tickMoveX[playerId] = horizontal;
+                                tickMoveY[playerId] = vertical;
+                            }
+
                             if (mov.sequence >= nextInputSequence[playerId] &&
                                 !pendingInputs[playerId].ContainsKey(mov.sequence))
                             {
@@ -259,14 +306,20 @@ internal class Program
                         }
                         else if(data is ShootingCommand shotCommand)
                         {
+                            hasHumanPlayedYet = true;
+                            activeHumanPlayerId = playerId;
+                            tickShotFired[playerId] = 1;
                             if (VerifyShot(playerId, shotCommand, out int targetPlayerId))
                             {
                                 lastShotTick[playerId] = serverTick;
                                 PlayerData target = players[targetPlayerId];
                                 target.health = Math.Max(0, target.health - shotDamage);
-                                players[targetPlayerId] = target;
                                 if (target.health == 0)
+                                {
                                     player.killCount++;
+                                    target.health = 100; // Respawn health on kill so combat & recording continue seamlessly
+                                }
+                                players[targetPlayerId] = target;
                                 Console.WriteLine($"[Shoot] player_{playerId} HIT player_{targetPlayerId} (targetHealth={target.health}, kills={player.killCount})");
                             }
                             else
@@ -282,6 +335,7 @@ internal class Program
                             if (!TryGetHistoricalSnapshot(reconCommand.header.startServerTick, playerId, out PlayerData histPlayer))
                                 histPlayer = players[playerId];
 
+                            ChronosModel.ActivatePlayerModel(opponentId);
                             TimelineLedgerTick[] serverLedger = ChronosModel.GenerateDeterministicLedger(
                                 reconCommand.header.startServerTick,
                                 reconCommand.header.tickCount,
@@ -289,14 +343,15 @@ internal class Program
                                 histOpponent.y,
                                 histOpponent.health,
                                 histPlayer.x,
-                                histPlayer.y);
+                                histPlayer.y,
+                                playerId: opponentId);
 
                             VerificationResult audit = ChronosModel.VerifyReconnectionPayload(
                                 serverLedger,
                                 reconCommand.ledger,
                                 ChronosModel.DefaultErrorTolerance);
 
-                            Console.WriteLine($"[Chronos Audit] player_{playerId} Reconnection Verdict={audit.verdict} Reason={audit.reason} Action={audit.action} (ticks={reconCommand.header.tickCount})");
+                            Console.WriteLine($"[Chronos Audit] player_{playerId} Reconnection (model={ChronosModel.GetModelProfileName(opponentId)}) Verdict={audit.verdict} Reason={audit.reason} Action={audit.action} (ticks={reconCommand.header.tickCount})");
                             await server.Send($"CHRONOS:{audit.verdict}:{audit.reason}:{audit.action}", client);
 
                             if (!audit.verified)
@@ -314,26 +369,31 @@ internal class Program
                     if (bannedClients.Contains(client))
                         continue;
 
-                    if (!isDisconnected[playerId] && (serverTick - lastSeenTick[playerId]) >= disconnectTimeoutTicks)
+                    if (!isRecordSession && !isDisconnected[playerId] && (serverTick - lastSeenTick[playerId]) >= disconnectTimeoutTicks)
                     {
                         isDisconnected[playerId] = true;
                         pendingInputs[playerId].Clear();
-                        Console.WriteLine($"[Chronos Server AI] player_{playerId} disconnected (no packets for {serverTick - lastSeenTick[playerId]} ticks). Generating snapshots via Chronos Model on server.");
+                        int modelId = (playerId == activeHumanPlayerId) ? 0 : 1;
+                        ChronosModel.ActivatePlayerModel(modelId);
+                        Console.WriteLine($"[Chronos Server AI] player_{playerId} disconnected (no packets for {serverTick - lastSeenTick[playerId]} ticks). Activated local model '{ChronosModel.GetModelProfileName(modelId)}' to generate snapshots on server.");
                     }
 
-                    if (isDisconnected[playerId])
+                    if (!isRecordSession && isDisconnected[playerId])
                     {
                         int opponentId = playerId == 0 ? 1 : 0;
                         PlayerData opponent = players[opponentId];
                         float aiHp = player.health > 0 ? player.health : 100f;
+                        int modelId = (playerId == activeHumanPlayerId) ? 0 : 1;
 
+                        ChronosModel.ActivatePlayerModel(modelId);
                         TimelineLedgerTick aiTick = ChronosModel.SimulateSplinterTick(
                             serverTick,
                             player.x,
                             player.y,
                             aiHp,
                             opponent.x,
-                            opponent.y);
+                            opponent.y,
+                            modelId);
 
                         player.x = MathF.Round((player.x + aiTick.mx * serverDelta * 10f) * 100f) / 100f;
                         player.y = MathF.Round((player.y + aiTick.my * serverDelta * 10f) * 100f) / 100f;
@@ -350,9 +410,12 @@ internal class Program
                             {
                                 lastShotTick[playerId] = serverTick;
                                 opponent.health = Math.Max(0, opponent.health - shotDamage);
-                                players[opponentId] = opponent;
                                 if (opponent.health == 0)
+                                {
                                     player.killCount++;
+                                    opponent.health = 100;
+                                }
+                                players[opponentId] = opponent;
                                 Console.WriteLine($"[Chronos Server AI Shoot] AI player_{playerId} (intent={(MacroIntent)aiTick.intent}) HIT player_{opponentId} (targetHealth={opponent.health}, kills={player.killCount})");
                             }
                         }
@@ -374,7 +437,49 @@ internal class Program
                     player.id = playerId;
                     player.serverTick = serverTick;
                     players[playerId] = player;
-                    Console.WriteLine($"pl_{player.id}, x: {player.x} y: {player.y}");
+                    if (!isRecordSession)
+                        Console.WriteLine($"pl_{player.id}, x: {player.x} y: {player.y}");
+                }
+
+                if (isRecordSession && hasHumanPlayedYet)
+                {
+                    // Record active player telemetry at 10 Hz (every 6 ticks) or immediately on any shot/movement tick
+                    int pId = activeHumanPlayerId;
+                    int oppId = pId == 0 ? 1 : 0;
+                    PlayerData me = players[pId];
+                    PlayerData enemy = players[oppId];
+                    float mx = tickMoveX[pId];
+                    float my = tickMoveY[pId];
+                    int shot = tickShotFired[pId];
+
+                    if (serverTick % 6 == 0 || shot == 1 || MathF.Abs(mx) > 0.01f || MathF.Abs(my) > 0.01f)
+                    {
+                        float vx = enemy.x - me.x;
+                        float vy = enemy.y - me.y;
+                        float dist = MathF.Sqrt(vx * vx + vy * vy);
+                        if (dist >= 0.20f)
+                        {
+                            int visible = dist <= 18f ? 1 : 0;
+                            float hp = me.health > 0 ? me.health : 100f;
+                            float ammo = 15f;
+                            int chokepoint = (MathF.Abs(me.x) < 2.5f && MathF.Abs(me.y) < 2.5f) ? 1 : 0;
+                            int intent = (int)ChronosModel.InferBehaviorIntent(mx, my, vx, vy, hp, ammo, chokepoint);
+
+                            string p0Row = $"0,{dist:F4},{visible},{hp:F1},{ammo:F1},{chokepoint},{intent},{vx:F4},{vy:F4},{mx:F4},{my:F4},{shot}\n";
+                            string liveRow = $"{dist:F4},{visible},{hp:F1},{ammo:F1},{chokepoint},{intent},{vx:F4},{vy:F4},{mx:F4},{my:F4},{shot},0\n";
+                            File.AppendAllText(p0CsvPath, p0Row);
+                            File.AppendAllText(liveCsvPath, liveRow);
+                            recordedSamplesThisSession++;
+                        }
+                    }
+
+                    bool clientClosed = clientSocketClosed || (serverTick - lastSeenTick[activeHumanPlayerId]) >= recordCloseTimeoutTicks;
+                    if (serverTick >= maxRecordTicks || clientClosed)
+                    {
+                        string stopReason = clientClosed ? "Client closed/disconnected" : "2-minute session timer completed";
+                        Console.WriteLine($"[Chronos Recorder] SESSION FINISHED ({stopReason}). Recorded {recordedSamplesThisSession} live samples to {p0CsvPath}.");
+                        break;
+                    }
                 }
                 
                 await server.SendPlayerData(clients, players.Values.ToArray(), bannedClients);
